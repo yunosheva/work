@@ -1,4 +1,5 @@
 ﻿#include "Header.h"
+#include "matrix_MRT.h"
 
 LatticeBoltzmannComponents::LatticeBoltzmannComponents() :
 ux(vector<vector<vector<vector<double>>>>(numberComponent, vector<vector<vector<double>>>(N_x + 2, vector<vector<double>>(N_y + 2, vector<double>(N_z + 2))))),
@@ -52,7 +53,6 @@ G(vector<double>(kMax))
 		s = { -0.154 , -0.04183 };
 		k = { {0., 0.03}, { 0.03, 0.} };
 		gamma = { 0.432, 1. };
-
 	}
 	case 3: // metan, pentan, etan
 	{
@@ -707,145 +707,6 @@ void LatticeBoltzmannComponents::TimeStep(int tStep)
 {
 	buf = f;
 
-	/*for (int numComp = 0; numComp < numberComponent; numComp++) {
-
-		if (tStep < RelaxTime) {
-
-			for (size_t l = 1; l < N_z + 1; l++) {
-				for (size_t j = 1; j < N_y + 1; j++) {
-					buf[numComp][1][0][j][l] = buf[numComp][2][1][j][l];
-					buf[numComp][2][N_x + 1][j][l] = buf[numComp][1][N_x][j][l];
-				};
-			};
-			for (size_t j = 1; j < N_y + 1; j++) {
-				for (size_t l = 1; l < N_z + 1; l++) {
-					buf[numComp][7][0][j][l] = buf[numComp][9][1][j + 1][l];
-				}
-			}
-			for (size_t j = 1; j < N_y + 1; j++) {
-				for (size_t l = 0; l < N_z + 1; l++) {
-					buf[numComp][8][N_x + 1][j][l] = buf[numComp][10][N_x][j + 1][l];
-				}
-			}
-			for (size_t j = 1; j < N_y + 1; j++) {
-				for (size_t l = 0; l < N_z + 1; l++) {
-					buf[numComp][9][N_x + 1][j][l] = buf[numComp][7][N_x][j - 1][l];
-				}
-			}
-			for (size_t j = 1; j < N_y + 1; j++) {
-				for (size_t l = 0; l < N_z + 1; l++) {
-					buf[numComp][10][0][j][l] = buf[numComp][8][1][j - 1][l];
-				}
-			}
-
-			for (size_t l = 1; l < N_z + 1; l++) {
-				for (size_t j = 0; j < N_y + 1; j++) {
-					buf[numComp][11][0][j][l] = buf[numComp][13][1][j][l + 1];
-				}
-			}
-
-			for (size_t l = 1; l < N_z + 1; l++) {
-				for (size_t j = 0; j < N_y + 1; j++) {
-					buf[numComp][12][N_x + 1][j][l] = buf[numComp][14][N_x][j][l + 1];
-				}
-			}
-
-			for (size_t l = 1; l < N_z + 1; l++) {
-				for (size_t j = 0; j < N_y + 1; j++) {
-					buf[numComp][13][N_x + 1][j][l] = buf[numComp][11][N_x][j][l - 1];
-				}
-			}
-
-			for (size_t l = 1; l < N_z + 1; l++) {
-				for (size_t j = 0; j < N_y + 1; j++) {
-					buf[numComp][14][0][j][l] = buf[numComp][12][1][j][l - 1];
-				}
-			}
-		}
-		else {
-			g = 1e-1;
-			buf[numComp][1][0] = buf[numComp][1][1];
-			buf[numComp][2][N_x + 1] = buf[numComp][2][N_x];
-			buf[numComp][7][0] = buf[numComp][7][1];
-			buf[numComp][8][N_x + 1] = buf[numComp][8][N_x];
-			buf[numComp][9][N_x + 1] = buf[numComp][9][N_x];
-			buf[numComp][10][0] = buf[numComp][10][1];
-			buf[numComp][11][0] = buf[numComp][11][1];
-			buf[numComp][12][N_x + 1] = buf[numComp][12][N_x];
-			buf[numComp][13][N_x + 1] = buf[numComp][13][N_x];
-			buf[numComp][14][0] = buf[numComp][14][1];
-		}
-
-		// movement with walls
-
-		for (int i = 1; i < N_x + 1; i++) {
-			for (int l = 1; l < N_z + 1; l++) {
-				buf[numComp][3][i][0][l] = buf[numComp][4][i][1][l];
-				buf[numComp][4][i][N_y + 1][l] = buf[numComp][3][i][N_y][l];
-			}
-		}
-
-		for (int i = 1; i < N_x + 1; i++) {
-			for (int j = 1; j < N_y + 1; j++) {
-				buf[numComp][5][i][j][0] = buf[numComp][6][i][j][1];
-				buf[numComp][6][i][j][N_z + 1] = buf[numComp][5][i][j][N_z];
-			}
-		}
-
-		for (int i = 0; i < N_x + 1; i++) {
-			for (int l = 1; l < N_z + 1; l++) {
-				buf[numComp][7][i][0][l] = buf[numComp][9][i + 1][1][l];
-				buf[numComp][10][i][N_y + 1][l] = buf[numComp][8][i + 1][N_y][l];
-			}
-		}
-		for (int i = 1; i < N_x + 2; i++) {
-			for (int l = 1; l < N_z + 1; l++) {
-				buf[numComp][9][i][N_y + 1][l] = buf[numComp][7][i - 1][N_y][l];
-				buf[numComp][8][i][0][l] = buf[numComp][10][i - 1][1][l];
-			}
-		}
-
-		for (int i = 0; i < N_x + 1; i++) {
-			for (int j = 1; j < N_y + 1; j++) {
-				buf[numComp][11][i][j][0] = buf[numComp][13][i + 1][j][1];
-				buf[numComp][14][i][j][N_z + 1] = buf[numComp][12][i + 1][j][N_z];
-			}
-		}
-		for (int i = 1; i < N_x + 2; i++) {
-			for (int j = 1; j < N_y + 1; j++) {
-				buf[numComp][13][i][j][N_z + 1] = buf[numComp][11][i - 1][j][N_z];
-				buf[numComp][12][i][j][0] = buf[numComp][14][i - 1][j][1];
-			}
-		}
-
-		for (int i = 1; i < N_x + 1; i++) {
-			for (int j = 0; j < N_y + 1; j++) {
-				buf[numComp][15][i][j][0] = buf[numComp][17][i][j + 1][1];
-				buf[numComp][18][i][j][N_z + 1] = buf[numComp][16][i][j + 1][N_z];
-			}
-		}
-		for (int i = 1; i < N_x + 1; i++) {
-			for (int j = 1; j < N_y + 2; j++) {
-				buf[numComp][17][i][j][N_z + 1] = buf[numComp][15][i][j - 1][N_z];
-				buf[numComp][16][i][j][0] = buf[numComp][18][i][j - 1][1];
-			}
-		}
-
-		for (int i = 1; i < N_x + 1; i++) {
-			for (int l = 0; l < N_z + 1; l++) {
-				buf[numComp][15][i][0][l] = buf[numComp][17][i][1][l + 1];
-				buf[numComp][16][i][N_y + 1][l] = buf[numComp][18][i][N_y][l + 1];
-			}
-		}
-		for (int i = 0; i < N_x + 1; i++) {
-			for (int l = 1; l < N_z + 2; l++) {
-				buf[numComp][17][i][N_y + 1][l] = buf[numComp][15][i][N_y][l - 1];
-				buf[numComp][18][i][0][l] = buf[numComp][16][i][1][l - 1];
-			}
-		}
-	}*/
-
-
   if (tStep < RelaxTime) {
 	  for (int numComp = 0; numComp < numberComponent; numComp++) {
 		  setWalls(numComp);
@@ -991,63 +852,7 @@ void LatticeBoltzmannComponents::TimeStep(int tStep)
 	}
 
 	setFiCondition();
-	/*Fi[0][0][0] = wetWalls * Fi[1][1][1];
-	Fi[0][N_y + 1][0] = wetWalls * Fi[1][N_y][1];
-	Fi[0][0][N_z + 1] = wetWalls * Fi[1][1][N_z];
-	Fi[0][N_y + 1][N_z + 1] = wetWalls * Fi[1][N_y][N_z];
-	Fi[N_x + 1][0][0] = wetWalls * Fi[N_x][1][1];
-	Fi[N_x + 1][N_y + 1][0] = wetWalls * Fi[N_x][N_y][1];
-	Fi[N_x + 1][0][N_z + 1] = wetWalls * Fi[N_x][1][N_z];
-	Fi[N_x + 1][N_y + 1][N_z + 1] = wetWalls * Fi[N_x][N_y][N_z];
 
-	for (int l = 1; l < N_z + 1; l++) {
-		Fi[0][0][l] = wetWalls * Fi[1][1][l];
-		Fi[0][N_y + 1][l] = wetWalls * Fi[1][N_y][l];
-		Fi[N_x + 1][0][l] = wetWalls * Fi[N_x][1][l];
-		Fi[N_x + 1][N_y + 1][l] = wetWalls * Fi[N_x][N_y][l];
-	}
-
-	for (int i = 1; i < N_x + 1; i++) {
-		Fi[i][0][0] = wetWalls * Fi[i][1][1];
-		Fi[i][N_y + 1][0] = wetWalls * Fi[i][N_y][1];
-		Fi[i][0][N_z + 1] = wetWalls * Fi[i][1][N_z];
-		Fi[i][N_y + 1][N_z + 1] = wetWalls * Fi[i][N_y][N_z];
-	}
-
-	for (int j = 1; j < N_y + 1; j++) {
-		Fi[0][j][0] = wetWalls * Fi[1][j][1];
-		Fi[N_x + 1][j][0] = wetWalls * Fi[N_x][j][1];
-		Fi[0][j][N_z + 1] = wetWalls * Fi[1][j][N_z];
-		Fi[N_x + 1][j][N_z + 1] = wetWalls * Fi[N_x][j][N_z];
-	}
-
-	for (int i = 1; i < N_x + 1; i++) {
-		for (int j = 1; j < N_y + 1; j++) {
-			Fi[i][j][0] = wetWalls * Fi[i][j][1];
-			Fi[i][j][N_z + 1] = wetWalls * Fi[i][j][N_z];
-		}
-	}
-
-	for (int i = 1; i < N_x + 1; i++) {
-		for (int l = 1; l < N_z + 1; l++) {
-			Fi[i][0][l] = wetWalls * Fi[i][1][l];
-			Fi[i][N_y + 1][l] = wetWalls * Fi[i][N_y][l];
-		}
-	}
-
-	for (int j = 1; j < N_y + 1; j++) {
-		for (int l = 1; l < N_z + 1; l++) {
-			if (tStep < RelaxTime) {
-				Fi[0][j][l] = wetWalls * Fi[1][j][l];
-				Fi[N_x + 1][j][l] = wetWalls * Fi[N_x][j][l];
-			}
-			else {
-				Fi[0][j][l] = Fi[1][j][l];
-				Fi[N_x + 1][j][l] = Fi[N_x][j][l];
-			}
-		}
-	}
-	*/
 #pragma omp parallel for
 	for (int i = 1; i < N_x + 1; i++) {
 		for (int j = 1; j < N_y + 1; j++) {
@@ -1127,7 +932,10 @@ void LatticeBoltzmannComponents::TimeStep(int tStep)
 			}
 		}
 	}
+}
 
+void LatticeBoltzmannComponents::collisions()
+{
 #pragma omp parallel for
 	for (int i = 1; i < N_x + 1; i++) {
 		for (int j = 1; j < N_y + 1; j++) {
@@ -1143,7 +951,10 @@ void LatticeBoltzmannComponents::TimeStep(int tStep)
 			};
 		};
 	};
+}
 
+void LatticeBoltzmannComponents::data(int tStep)
+{
 	if (tStep % 100 == 0)
 	{
 		SaveVTKFile(tStep);
@@ -1180,8 +991,357 @@ void LatticeBoltzmannComponents::TimeStep(int tStep)
 		}
 		cout << g << endl;
 	}
-
-
 }
 
+MRT::MRT():
+m(vector<double>(kMax)),
+m_eq(vector<double>(kMax))
+{
+	dx = { 0, 1, -1, 0,  0, 0,  0, 1, -1,  1, -1, 1, -1,  1, -1, 0,  0,  0,  0 };
+	dy = { 0, 0,  0, 1, -1, 0,  0, 1,  1, -1, -1, 0,  0,  0,  0, 1, -1,  1, -1 };
+	dz = { 0, 0,  0, 0,  0, 1, -1, 0,  0,  0,  0, 1,  1, -1, -1, 1,  1, -1, -1 };
+	index = {          0, 1, 2, 3, 4, 5, 6, 7,  8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 };
+	opposite_index = { 0, 2, 1, 4, 3, 6, 5, 10, 9, 8,  7, 14, 13, 12, 11, 18, 17, 16, 15 };
+	s_ii = { 0, s1, s2, 0,  s4, 0,  s4, 0, s4,  s9, s10, s9, s10, s13, s13, s13, s16, s16, s16 };
+}
+
+void MRT::setPeriodCondition(int numComp)
+{
+	X_condition[0] = true;
+	X_condition[1] = false;
+	X_condition[2] = false;
+	wall_condition[0] = true;
+	wall_condition[1] = false;
+	wall_condition[2] = false;
+	for (size_t l = 1; l < N_z + 1; l++) {
+		for (size_t j = 1; j < N_y + 1; j++) {
+			buf[numComp][1][0][j][l] = buf[numComp][1][N_x][j][l];
+			buf[numComp][2][N_x + 1][j][l] = buf[numComp][2][1][j][l];
+		};
+	};
+	for (size_t j = 1; j < N_y + 1; j++) {
+		for (size_t l = 1; l < N_z + 1; l++) {
+			buf[numComp][7][0][j][l] = buf[numComp][7][N_x][j + 1][l];
+		}
+	}
+	for (size_t j = 1; j < N_y; j++) {
+		for (size_t l = 0; l < N_z + 1; l++) {
+			buf[numComp][8][N_x + 1][j][l] = buf[numComp][8][1][j + 1][l];
+		}
+	}
+	for (size_t j = 2; j < N_y + 1; j++) {
+		for (size_t l = 0; l < N_z + 1; l++) {
+			buf[numComp][10][N_x + 1][j][l] = buf[numComp][10][1][j - 1][l];
+		}
+	}
+	for (size_t j = 2; j < N_y + 1; j++) {
+		for (size_t l = 0; l < N_z + 1; l++) {
+			buf[numComp][9][0][j][l] = buf[numComp][9][N_x][j - 1][l];
+		}
+	}
+
+	for (size_t l = 1; l < N_z; l++) {
+		for (size_t j = 0; j < N_y + 1; j++) {
+			buf[numComp][11][0][j][l] = buf[numComp][11][N_x][j][l + 1];
+		}
+	}
+
+	for (size_t l = 1; l < N_z; l++) {
+		for (size_t j = 0; j < N_y + 1; j++) {
+			buf[numComp][12][N_x + 1][j][l] = buf[numComp][12][1][j][l + 1];
+		}
+	}
+
+	for (size_t l = 2; l < N_z + 1; l++) {
+		for (size_t j = 0; j < N_y + 1; j++) {
+			buf[numComp][14][N_x + 1][j][l] = buf[numComp][14][1][j][l - 1];
+		}
+	}
+
+	for (size_t l = 2; l < N_z + 1; l++) {
+		for (size_t j = 0; j < N_y + 1; j++) {
+			buf[numComp][13][0][j][l] = buf[numComp][13][N_x][j][l - 1];
+		}
+	}
+
+	// period walls
+	for (int i = 1; i < N_x + 1; i++) {
+		for (int j = 1; j < N_y + 1; j++) {
+			buf[numComp][5][i][j][0] = buf[numComp][5][i][j][N_z];
+			buf[numComp][6][i][j][N_z + 1] = buf[numComp][6][i][j][1];
+			buf[numComp][11][i][j][0] = buf[numComp][11][i][j][N_z];
+			buf[numComp][12][i][j][0] = buf[numComp][12][i][j][N_z];
+			buf[numComp][14][i][j][N_z + 1] = buf[numComp][14][i][j][1];
+			buf[numComp][13][i][j][N_z + 1] = buf[numComp][13][i][j][1];
+			buf[numComp][15][i][j][0] = buf[numComp][15][i][j][N_z];
+			buf[numComp][16][i][j][0] = buf[numComp][16][i][j][N_z];
+			buf[numComp][18][i][j][N_z + 1] = buf[numComp][18][i][j][1];
+			buf[numComp][17][i][j][N_z + 1] = buf[numComp][17][i][j][1];
+		}
+	}
+
+	for (int i = 1; i < N_x + 1; i++) {
+		for (int l = 1; l < N_z + 1; l++) {
+			buf[numComp][3][i][0][l] = buf[numComp][3][i][N_y][l];
+			buf[numComp][4][i][N_y + 1][l] = buf[numComp][4][i][1][l];
+			buf[numComp][7][i][0][l] = buf[numComp][7][i][N_y][l];
+			buf[numComp][8][i][0][l] = buf[numComp][8][i][N_y][l];
+			buf[numComp][10][i][N_y + 1][l] = buf[numComp][10][i][1][l];
+			buf[numComp][9][i][N_y + 1][l] = buf[numComp][9][i][1][l];
+			buf[numComp][15][i][0][l] = buf[numComp][15][i][N_y][l];
+			buf[numComp][16][i][N_y + 1][l] = buf[numComp][16][i][1][l];
+			buf[numComp][18][i][N_y + 1][l] = buf[numComp][18][i][1][l];
+			buf[numComp][17][i][0][l] = buf[numComp][17][i][N_y][l];
+		}
+	}
+
+	for (size_t j = 1; j < N_y + 1; j++) {
+		for (size_t l = 1; l < N_z + 1; l++) {
+			buf[numComp][1][0][j][l] = buf[numComp][1][N_x][j][l];
+			buf[numComp][2][N_x + 1][j][l] = buf[numComp][2][1][j][l];
+			buf[numComp][7][0][j][l] = buf[numComp][7][N_x][j][l];
+			buf[numComp][8][N_x + 1][j][l] = buf[numComp][8][1][j][l];
+			buf[numComp][10][N_x + 1][j][l] = buf[numComp][10][1][j][l];
+			buf[numComp][9][0][j][l] = buf[numComp][9][N_x][j][l];
+			buf[numComp][11][0][j][l] = buf[numComp][11][N_x][j][l];
+			buf[numComp][12][N_x + 1][j][l] = buf[numComp][12][1][j][l];
+			buf[numComp][14][N_x + 1][j][l] = buf[numComp][14][1][j][l];
+			buf[numComp][13][0][j][l] = buf[numComp][13][N_x][j][l];
+		}
+	}
+
+	for (int i = 1; i < N_x + 1; i++) {
+		buf[numComp][15][i][0][0] = buf[numComp][15][i][N_y][N_z];
+		buf[numComp][18][i][N_y + 1][N_z + 1] = buf[numComp][18][i][1][1];
+		buf[numComp][16][i][N_y + 1][0] = buf[numComp][16][i][1][N_z];
+		buf[numComp][17][i][0][N_z + 1] = buf[numComp][17][i][N_y][1];
+	}
+
+	for (int j = 1; j < N_y + 1; j++) {
+		buf[numComp][11][0][j][0] = buf[numComp][11][N_x][j][N_z];
+		buf[numComp][12][N_x + 1][j][0] = buf[numComp][12][1][j][N_z];
+		buf[numComp][14][N_x + 1][j][N_z + 1] = buf[numComp][14][1][j][1];
+		buf[numComp][13][0][j][N_z + 1] = buf[numComp][13][N_x][j][1];
+	}
+
+	for (int l = 1; l < N_z + 1; l++) {
+		buf[numComp][7][0][0][l] = buf[numComp][7][N_x][N_y][l];
+		buf[numComp][8][N_x + 1][0][l] = buf[numComp][8][1][N_y][l];
+		buf[numComp][10][N_x + 1][N_y + 1][l] = buf[numComp][10][1][1][l];
+		buf[numComp][9][0][N_y + 1][l] = buf[numComp][9][N_x][1][l];
+	}
+}
+
+void MRT::setFreeConditionByX(int numComp)
+{
+	X_condition[0] = false;
+	X_condition[1] = true;
+	X_condition[2] = false;
+	buf[numComp][1][0] = buf[numComp][1][1];
+	buf[numComp][2][N_x + 1] = buf[numComp][2][N_x];
+	buf[numComp][7][0] = buf[numComp][7][1];
+	buf[numComp][8][N_x + 1] = buf[numComp][8][N_x];
+	buf[numComp][10][N_x + 1] = buf[numComp][10][N_x];
+	buf[numComp][9][0] = buf[numComp][9][1];
+	buf[numComp][11][0] = buf[numComp][11][1];
+	buf[numComp][12][N_x + 1] = buf[numComp][12][N_x];
+	buf[numComp][14][N_x + 1] = buf[numComp][14][N_x];
+	buf[numComp][13][0] = buf[numComp][13][1];
+}
+
+void MRT::setWalls(int numComp)
+{
+	wall_condition[0] = false;
+	wall_condition[1] = false;
+	wall_condition[2] = true;
+	for (int i = 1; i < N_x + 1; i++) {
+		for (int l = 1; l < N_z + 1; l++) {
+			buf[numComp][3][i][0][l] = buf[numComp][4][i][1][l];
+			buf[numComp][4][i][N_y + 1][l] = buf[numComp][3][i][N_y][l];
+		}
+	}
+
+	for (int i = 1; i < N_x + 1; i++) {
+		for (int j = 1; j < N_y + 1; j++) {
+			buf[numComp][5][i][j][0] = buf[numComp][6][i][j][1];
+			buf[numComp][6][i][j][N_z + 1] = buf[numComp][5][i][j][N_z];
+		}
+	}
+
+	for (int i = 0; i < N_x + 1; i++) {
+		for (int l = 1; l < N_z + 1; l++) {
+			buf[numComp][7][i][0][l] = buf[numComp][10][i + 1][1][l];
+			buf[numComp][9][i][N_y + 1][l] = buf[numComp][8][i + 1][N_y][l];
+		}
+	}
+	for (int i = 1; i < N_x + 2; i++) {
+		for (int l = 1; l < N_z + 1; l++) {
+			buf[numComp][10][i][N_y + 1][l] = buf[numComp][7][i - 1][N_y][l];
+			buf[numComp][8][i][0][l] = buf[numComp][9][i - 1][1][l];
+		}
+	}
+
+	for (int i = 0; i < N_x + 1; i++) {
+		for (int j = 1; j < N_y + 1; j++) {
+			buf[numComp][11][i][j][0] = buf[numComp][14][i + 1][j][1];
+			buf[numComp][13][i][j][N_z + 1] = buf[numComp][12][i + 1][j][N_z];
+		}
+	}
+	for (int i = 1; i < N_x + 2; i++) {
+		for (int j = 1; j < N_y + 1; j++) {
+			buf[numComp][14][i][j][N_z + 1] = buf[numComp][11][i - 1][j][N_z];
+			buf[numComp][12][i][j][0] = buf[numComp][13][i - 1][j][1];
+		}
+	}
+
+	for (int i = 1; i < N_x + 1; i++) {
+		for (int j = 0; j < N_y + 1; j++) {
+			buf[numComp][15][i][j][0] = buf[numComp][18][i][j + 1][1];
+			buf[numComp][17][i][j][N_z + 1] = buf[numComp][16][i][j + 1][N_z];
+		}
+	}
+	for (int i = 1; i < N_x + 1; i++) {
+		for (int j = 1; j < N_y + 2; j++) {
+			buf[numComp][18][i][j][N_z + 1] = buf[numComp][15][i][j - 1][N_z];
+			buf[numComp][16][i][j][0] = buf[numComp][17][i][j - 1][1];
+		}
+	}
+
+	for (int i = 1; i < N_x + 1; i++) {
+		for (int l = 0; l < N_z + 1; l++) {
+			buf[numComp][15][i][0][l] = buf[numComp][18][i][1][l + 1];
+			buf[numComp][16][i][N_y + 1][l] = buf[numComp][17][i][N_y][l + 1];
+		}
+	}
+	for (int i = 0; i < N_x + 1; i++) {
+		for (int l = 1; l < N_z + 2; l++) {
+			buf[numComp][18][i][N_y + 1][l] = buf[numComp][15][i][N_y][l - 1];
+			buf[numComp][17][i][0][l] = buf[numComp][16][i][1][l - 1];
+		}
+	}
+}
+
+void MRT::setWallsByX(int numComp)
+{
+	X_condition[0] = false;
+	X_condition[1] = false;
+	X_condition[2] = true;
+
+	for (size_t l = 1; l < N_z + 1; l++) {
+		for (size_t j = 1; j < N_y + 1; j++) {
+			buf[numComp][1][0][j][l] = buf[numComp][2][1][j][l];
+			buf[numComp][2][N_x + 1][j][l] = buf[numComp][1][N_x][j][l];
+		};
+	};
+	for (size_t j = 1; j < N_y + 1; j++) {
+		for (size_t l = 1; l < N_z + 1; l++) {
+			buf[numComp][7][0][j][l] = buf[numComp][10][1][j + 1][l];
+		}
+	}
+	for (size_t j = 1; j < N_y + 1; j++) {
+		for (size_t l = 0; l < N_z + 1; l++) {
+			buf[numComp][8][N_x + 1][j][l] = buf[numComp][9][N_x][j + 1][l];
+		}
+	}
+	for (size_t j = 1; j < N_y + 1; j++) {
+		for (size_t l = 0; l < N_z + 1; l++) {
+			buf[numComp][10][N_x + 1][j][l] = buf[numComp][7][N_x][j - 1][l];
+		}
+	}
+	for (size_t j = 1; j < N_y + 1; j++) {
+		for (size_t l = 0; l < N_z + 1; l++) {
+			buf[numComp][9][0][j][l] = buf[numComp][8][1][j - 1][l];
+		}
+	}
+
+	for (size_t l = 1; l < N_z + 1; l++) {
+		for (size_t j = 0; j < N_y + 1; j++) {
+			buf[numComp][11][0][j][l] = buf[numComp][14][1][j][l + 1];
+		}
+	}
+
+	for (size_t l = 1; l < N_z + 1; l++) {
+		for (size_t j = 0; j < N_y + 1; j++) {
+			buf[numComp][12][N_x + 1][j][l] = buf[numComp][13][N_x][j][l + 1];
+		}
+	}
+
+	for (size_t l = 1; l < N_z + 1; l++) {
+		for (size_t j = 0; j < N_y + 1; j++) {
+			buf[numComp][14][N_x + 1][j][l] = buf[numComp][11][N_x][j][l - 1];
+		}
+	}
+
+	for (size_t l = 1; l < N_z + 1; l++) {
+		for (size_t j = 0; j < N_y + 1; j++) {
+			buf[numComp][13][0][j][l] = buf[numComp][12][1][j][l - 1];
+		}
+	}
+}
+
+double MRT::Kroneker(int a, int b)
+{
+	double number;
+	if (a == b) {
+		number = 1.;
+	}
+	else {
+		number = 0.;
+	}
+	return number;
+}
+
+void MRT::collisions()
+{
+	vector<double> moment(19);
+#pragma omp parallel for
+
+	for (int i = 1; i < N_x + 1; i++) {
+		for (int j = 1; j < N_y + 1; j++) {
+			for (int l = 1; l < N_z + 1; l++) {
+				for (int numComp = 0; numComp < numberComponent; numComp++) {
+					for (int s = 0; s < kMax; s++) {
+						m[s] = 0;
+						for (int s1 = 0; s1 < kMax; s1++) {
+							m[s] += M[s][s1] * f[numComp][s1][i][j][l];
+						}
+					}
+					m_eq[0] = rho[numComp][i][j][l];
+					m_eq[1] = -11 * rho[numComp][i][j][l] + 19 * rho[numComp][i][j][l] * squaring(ux_all[i][j][l], uy_all[i][j][l], uz_all[i][j][l]) * delta_t * delta_t / h / h;
+					m_eq[2] = w_e * rho[numComp][i][j][l] + w_ej * rho[numComp][i][j][l] * squaring(ux_all[i][j][l], uy_all[i][j][l], uz_all[i][j][l]) * delta_t * delta_t / h / h;
+					m_eq[3] = ux_all[i][j][l] * rho[numComp][i][j][l] * delta_t / h;
+					m_eq[4] = -2. / 3. * ux_all[i][j][l] * rho[numComp][i][j][l] * delta_t / h;
+					m_eq[5] = uy_all[i][j][l] * rho[numComp][i][j][l] * delta_t / h;
+					m_eq[6] = -2. / 3. * uy_all[i][j][l] * rho[numComp][i][j][l] * delta_t / h;
+					m_eq[7] = uz_all[i][j][l] * rho[numComp][i][j][l] * delta_t / h;
+					m_eq[8] = -2. / 3. * uz_all[i][j][l] * rho[numComp][i][j][l] * delta_t / h;
+					m_eq[9] = 1 / rho[numComp][i][j][l] * (2 * m_eq[3] * m_eq[3] - (m_eq[5] * m_eq[5] + m_eq[7] * m_eq[7]));
+					m_eq[10] = w_xx * m_eq[9];
+					m_eq[11] = 1 / rho[numComp][i][j][l] * (m_eq[5] * m_eq[5] - m_eq[7] * m_eq[7]);
+					m_eq[12] = w_xx * m_eq[11];
+					m_eq[13] = 1 / rho[numComp][i][j][l] * m_eq[3] * m_eq[5];
+					m_eq[14] = 1 / rho[numComp][i][j][l] * m_eq[7] * m_eq[5];
+					m_eq[15] = 1 / rho[numComp][i][j][l] * m_eq[3] * m_eq[7];
+					m_eq[16] = 0;
+					m_eq[17] = 0;
+					m_eq[18] = 0;
+
+					for (int s = 0; s < kMax; s++) {
+						moment[s] = 0;
+						for (int s1 = 0; s1 < kMax; s1++) {
+							for (int s2 = 0; s2 < kMax; s2++) {
+								moment[s] += -Mi[s][s1] * s_ii[s2] * (m[s1] - m_eq[s1]) * Kroneker(s1, s2);
+							}
+						}
+					}
+					for (int s = 0; s < kMax; s++) {
+						f[numComp][s][i][j][l] = f[numComp][s][i][j][l] + moment[s] + F_e(c[s], ux[numComp][i][j][l] + dux[numComp][i][j][l] + g, uy[numComp][i][j][l] + duy[numComp][i][j][l],
+							uz[numComp][i][j][l] + duz[numComp][i][j][l], w[s], rho[numComp][i][j][l]) -
+							F_e(c[s], ux[numComp][i][j][l], uy[numComp][i][j][l], uz[numComp][i][j][l], w[s], rho[numComp][i][j][l]);
+					}
+				}
+			}
+		};
+	};
+}
 
