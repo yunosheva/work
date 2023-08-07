@@ -12,8 +12,8 @@ using namespace std;
 const double R = 8.31446;
 double delta_t = 1e-9;
 double h = 1e-6;
-int N_x = 130;
-int N_y = 110;
+int N_x = 500;
+int N_y = 500;
 int N_z = 1;
 int FullTime = 10000000;
 int RelaxTime = 0;
@@ -50,7 +50,7 @@ double percent2 = 0.6;
 double rho_mix = 280;
 double percent = 0.3;
 
-double s1 = 1.19, s2 = 1.4, s10 = 1.4, s4 = 1.2, s16 = 1.98, s9 = 1., s13 = 5. / 3.; // s13 = 1 / tau, tau = 0.6
+double s1 = 1.19, s2 = 1.4, s10 = 1.4, s4 = 1.2, s16 = 1.98, s9 = 1., s13 = 5. / 3.; // s13 = 1 / tau, tau = 0.6 ; tau = nu/teta/teta/dt + 1/2, nu = 2.26e-7 для смеси с 70% метана
 //double w_e = 3, w_ej = -11 / 2, w_xx = -0.5;
 double w_e = 3., w_ej = -11. / 2., w_xx = 1. / 2.;
 
@@ -286,7 +286,7 @@ int main() {
 			for (int l = 1; l < N_z + 1; l++)
 				rho[1][i][j][l] = rho_mix - rho[0][i][j][l] + 5 * static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
 */
-	for (int j = 1; j < 51; j++) {
+	for (int j = 1; j < 1; j++) {
 		for (int i = 1; i < N_x + 1; i++) {
 			for (int l = 1; l < N_z + 1; l++) {
 				if (mask[i][j][l] == 0) {
@@ -300,13 +300,16 @@ int main() {
 
 	for (int j = 1; j < N_y + 1; j++) {
 		for (int l = 1; l < N_z + 1; l++) {
-			rho[0][0][j][l] = 27.66966;
-			rho[1][0][j][l] = 367.342;
-			rho[2][0][j][l] = 51.8048;
+			rho[0][0][j][l] = 37.66966;
+			rho[1][0][j][l] = 387.342;
+			rho[2][0][j][l] = 61.8048;
+			rho[0][N_x + 1][j][l] = 21.5944;
+			rho[1][N_x + 1][j][l] = 357.342;
+			rho[2][N_x + 1][j][l] = 41.8048;
 		}
 	}
 
-	for (int j = 51; j < N_y + 1; j++) {
+	for (int j = 0; j < N_y + 1; j++) {
 		for (int i = 1; i < N_x + 1; i++) {
 			for (int l = 1; l < N_z + 1; l++) {
 				if (mask[i][j][l] == 0) {
@@ -372,7 +375,7 @@ int main() {
 		}
 	}
 
-	for (int iter = 0; iter < 4; iter++) {
+	/*for (int iter = 0; iter < 4; iter++) {
 		for (int i = 1 + 40 * iter; i < 11 + 40 * iter; i++) {
 			for (int j = 50; j < 101; j++) {
 				mask[i][j][1] = 1;
@@ -408,12 +411,27 @@ int main() {
 		for (int j = 1; j < 51; j++) {
 			mask[i][j][1] = 1;
 		}
+	}*/
+	std::ifstream in("D:\openMP\practice_GPN\file1.txt"); // окрываем файл для чтения
+	if (in.is_open())
+	{
+		for (int j = 0; j <= N_y + 1; ++j)
+			for (int i = 0; i <= N_x + 1; ++i) {
+				in >> mask[i][j][1];
+			}
+	}
+	in.close();
+	/*for (int iter = 0; iter < 4; iter++) {
+		for (int i = 1 + 16 * iter; i < 11 + 16 * iter; i++) {
+			for (int j = 1; j < 58; j++) {
+				mask[i][j][1] = 1;
+			}
+		}
 	}
 
 
-
 	ofstream out;          // поток для записи
-	out.open("mask.txt");      // открываем файл для записи
+	out.open("simpleMask.txt");      // открываем файл для записи
 	if (out.is_open())
 	{
 		for (int j = 1; j < N_y + 1; j++) {
@@ -708,7 +726,7 @@ int main() {
 				for (int s = 0; s < 19; s++) {
 					for (int numComp = 0; numComp < numberComponent; numComp++) {
 						buf[numComp][s][0][j][l] = buf[numComp][opposite_index[s]][1][j][l] + F_e(c[s], 0, 0, 0, w[s], rho[numComp][0][j][l]) - F_e(c[s], 0, 0, 0, w[s], rho[numComp][1][j][l]);
-						//buf[numComp][s][N_x + 1][j][l] = buf[numComp][s][N_x][j][l] + F_e(c[s], 0, 0, 0, w[s], rho[numComp][N_x + 1][j][l]) - F_e(c[s], 0, 0, 0, w[s], rho[numComp][N_x][j][l]);
+						buf[numComp][s][N_x + 1][j][l] = buf[numComp][s][N_x][j][l] + F_e(c[s], 0, 0, 0, w[s], rho[numComp][N_x + 1][j][l]) - F_e(c[s], 0, 0, 0, w[s], rho[numComp][N_x][j][l]);
 					}
 				}
 			}
@@ -1112,7 +1130,7 @@ int main() {
 			cout << " rho1 min = " << rho_min[0] << " and rho1 max = " << rho_max[0] << endl;
 			cout << " rho2 min = " << rho_min[1] << " and rho2 max = " << rho_max[1] << endl;
 			cout << " rho3 min = " << rho_min[2] << " and rho3 max = " << rho_max[2] << endl;
-			cout << (double)(1. - vol) << endl; // porosity
+			//cout << (double)(1. - vol) << endl; // porosity
 			if (Full_rho1 < 20. * N_x * N_y * N_z) {
 				auto end = std::chrono::steady_clock::now();
 
