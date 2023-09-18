@@ -1,5 +1,4 @@
 ﻿#include <iostream> 
-#include <fstream> 
 #include <vector> 
 #include <fstream>
 #include <cmath>
@@ -12,47 +11,73 @@ using namespace std;
 const double R = 8.31446;
 double delta_t = 1e-9;
 double h = 1e-6;
-int N_x = 500;
-int N_y = 500;
+int N_x = 20;
+int N_y = 20;
 int N_z = 1;
-int FullTime = 10000000;
-int RelaxTime = 0;
+int FullTime = 100000;
+int RelaxTime = 1000000;
 double teta = 1. / 3. * h * h / delta_t / delta_t;
 double tau = 1.;
 double A = -0.58;
-double T = 370;
-double g = 0;
+double T = 500;
+double g = 0.;
 double Full_rho1 = 0;
 double Full_rho2 = 0;
 double Full_rho3 = 0;
 vector<double> Full_velocity_x = { 0, 0, 0 };
 vector<double> Full_velocity_y = { 0, 0, 0 };
 vector<double> Full_velocity_z = { 0, 0, 0 };
-vector<double> omega = { 0.01142, 0.2514, 0.0979 }; /* metan *//* pentan */
+double coef = 1.;//0.97
+vector<double> omega = { 0.011642, 0.154589, 0.807926 };
 double wetWalls = 1;
 double wetObst = 1.;
 double sumG = 0;
 int volumeObs = 0;
 int numberComponent = 3;
-vector<double> Tcr = { 190.564, 469.65, 305.51 };
-vector<double> p_cr = { 4.5992 * 1e6, 3.3675 * 1e6, 4.8711 * 1e6 };
-vector<double> mu = { 0.016, 0.07215, 0.03007 };
-vector<double> rho_cr = { 162.66, 232, 200 };
-vector<double> s = { -0.154 , -0.04183, 0.1002 };
+vector<double> Tcr = { 190.0536, 364.1696, 733.8359 };
+vector<double> p_cr = { 4.5896 * 1e6, 4.448 * 1e6, 1.4277 * 1e6 };
+vector<double> mu = { 0.0181, 0.062709, 0.283486 };
+vector<double> rho_cr = { 163.7782, 229.9604, 243.3234 };
+vector<double> s = { -0.152782 , -0.079213, -0.169468 };
 double a_0 = 0.4572793, b_0 = 0.07780669;
-vector<vector<double>> k = { {0, 0.03, 0.005}, { 0.03, 0, 0.01}, {0.005, 0.01, 0} };
-vector<double> gamma = { 0.432, 1., 0.5 };
+vector<vector<double>> k = { {0, 0.01, 0.045}, { 0.01, 0, 0.005}, {0.045, 0.005, 0} };
+vector<double> gamma = { 0.28, 0.52, 0.8 };
 vector<double> rho_min = { 100, 100, 100 };
 vector<double> rho_max = { -100, -100, -100 };
 double rho_mix_max, rho_mix_min;
-double percent1 = 0.2;
-double percent2 = 0.6;
-double rho_mix = 280;
-double percent = 0.3;
+double percent1 = 0.1264;
+double percent2 = 0.0573;
+double rho_mix = 220;
+double Z[] = { 0.1, 12.54, 2., 1.98, 1.75, 1.4, 2.58, 3.42, 3.43, 3.17, 3.9,
+3.45, 3.33, 3.47, 3.1, 3.24, 2.72, 2.59, 2.67, 2.39, 2.12, 2.01, 1.89, 1.79, 1.67, 1.57, 1.49,
+1.42, 1.34, 1.34, 1.21, 1.19, 1.1, 1.03, 0.99, 0.87, 13.74 };
+double K_ij[37][37] = { {} };
+double Tc[] = {126.05, 190.564, 305.322, 369.89, 425.125, 469.7, 507, 540, 568, 594, 617, 
+639, 658, 675, 693, 707, 723, 732, 745, 756, 768, 779, 789, 797, 806, 814, 821, 829, 835, 842,
+848, 854, 860, 865, 871, 876, 881};
+double Pc[] = {3.39 * 1e6, 4.5992 * 1e6 , 4.8762 * 1e6, 4.2512 * 1e6 , 3.796 * 1e6, 3.3675 * 1e6 ,
+3.0441* 1e6 , 2.73573* 1e6 , 2.48359* 1e6 , 2.281* 1e6, 2.103* 1e6 , 1.97* 1e6 , 1.817* 1e6 , 1.723* 1e6 
+, 1.621* 1e6 , 1.52* 1e6 , 1.4* 1e6 , 1.317* 1e6 , 1.24* 1e6 , 1.115* 1e6 , 1.16* 1e6 ,
+1.074* 1e6 , 1.1023* 1e6 , 0.983* 1e6 , 0.932* 1e6 , 0.978* 1e6 , 0.861* 1e6 , 0.831* 1e6 , 0.8* 1e6 ,
+0.77* 1e6 , 0.74* 1e6 , 0.709* 1e6 , 0.689* 1e6, 0.669* 1e6 , 0.648* 1e6 , 0.628* 1e6 , 0.608* 1e6 };
+double Dc[] = {304, 162.66, 206.18, 220, 228, 232, 233.2, 233, 232, 232, 236, 237.2, 238.8,
+236.36, 238.99, 241.39,246.13, 240.475, 247.081, 247.48, 247.856, 247.698, 248.488, 248.275, 248.529, 249.25,
+249.46, 249.665, 249.854, 249.541, 250.23,249.85,250.488, 250.61, 250.261, 250.87, 250.98};
+double Wc[] = {0.04,0.01142,0.0995,0.1521,0.201,0.251,0.3,0.349,0.398,0.4433,0.4884,0.53,0.574,
+0.623,0.679,0.706,0.7174,0.77,0.7951,0.827,0.9096,0.861,0.891,0.921,0.95,0.978,1.005,
+1.032,1.059,1.085,1.11,1.135,1.159,1.183,1.207,1.23,1.253};
+double Sc[] = { -0.1,-0.154,-0.1002,-0.08501,-0.06413,-0.04183,-0.01478,-0.024792,-0.047792,-0.67649,
+-0.085125,-0.100674,-0.114654,-0.1276518,-0.1392115,-0.14989,-0.159741,-0.1688969,-0.1774375,
+-0.1854419,-0.1929,-0.1997836,-0.2067811,-0.21286,-0.2189,-0.22494,-0.2304,-0.2356798,-0.2407
+, -0.2452544, -0.25017,-0.2543319,-0.2588798,-0.2630054,-0.2669892,-0.2708374,-0.2745556 };
+double Muc[] = {0.28, 0.016,0.03,0.044,0.058,0.072,0.086,0.1,0.114,0.128,0.142,0.15631,0.17034,
+0.184367,0.198364,0.212424,0.226448,0.240475,0.254494,0.268518,0.282556,0.296,0.31061,0.324,
+0.338,0.35269,0.36671,0.38074,0.39477,0.408,0.42289,0.436,0.45088,0.4649,0.47893, 0.49296,0.50698};
 
-double s1 = 1.19, s2 = 1.4, s10 = 1.4, s4 = 1.2, s16 = 1.98, s9 = 1., s13 = 5. / 3.; // s13 = 1 / tau, tau = 0.6 ; tau = nu/teta/teta/dt + 1/2, nu = 2.26e-7 для смеси с 70% метана
+double s1 = 1.19, s3 = 1. / tau, s2 = 1.4, s10 = 1.4, s4 = 1.2, s16 = 1.98, s9 = 1., s13 = 1. / tau; // s13 = 1 / tau, tau = 0.6
+//double s1 = 1., s2 = 1., s10 = 1., s4 = 1., s16 = 1., s9 = 1., s13 = 1., s3 = 1.; // s13 = 1 / tau, tau = 0.6
 //double w_e = 3, w_ej = -11 / 2, w_xx = -0.5;
-double w_e = 3., w_ej = -11. / 2., w_xx = 1. / 2.;
+double w_e = 3., w_ej = -11. / 2., w_xx = -1. / 2.;
 
 /* равновесные функции распределения, sp - скалярное произведение, u2 - вектор скорости в квадрате */
 double F_e1(double sp, double u2, double w, double rho) {
@@ -102,8 +127,15 @@ double F(double f, double f_eq, double f_eq1, double f_eq2) {
 
 /* уравнение состояния Пенга-Робинсона */
 double a(const double temperature, double omega) {
-	double m = 0.382144 + 1.476905 * omega - 0.134488 * omega * omega;
-	double a = pow((1 + m * (1 - sqrt(temperature))), 2);
+	double m, a;
+	if (omega < 0.49) {
+		m = 0.382144 + 1.476905 * omega - 0.134488 * omega * omega;
+		a = pow((1 + m * (1 - sqrt(temperature))), 2);
+	}
+	else {
+		m = 0.379642 + 1.48503 * omega - 0.164423 * omega * omega + 0.16666 * omega * omega * omega;
+		a = pow((1 + m * (1 - sqrt(temperature))), 2);
+	}
 	return a;
 }
 
@@ -114,8 +146,19 @@ double PressurePengRobinson(double rho, const double temperature, double omega) 
 }
 
 double PressurePengRobinsonMultyComponent(double rho1, double rho2, double rho3) {
-	double B = 0, A = 0, D = 0, S = 0;
+	double B = 0, A = 0, D = 0, S = 0, A1 = 0, B1 = 0 ;
 	vector<double> Rho = { rho1, rho2, rho3 };
+	/*for (int i = 0; i < 37; i++) {
+		double b = b_0 * R * Tc[i] / Pc[i];
+		B1 += b * Dc[i] / Muc[i];
+		for (int num2 = 0; num2 < 37; num2++) {
+			A1 += Dc[num2] / Muc[num2] * Dc[i] / Muc[i] * a_0 * R * R * Tc[num2] * Tc[i] *
+				sqrt(a(T / Tc[i], Wc[i]) * a(T / Tc[num2], Wc[num2]) / Pc[i] / Pc[num2]) * (1 - K_ij[i][num2]);
+		}
+	}
+	for (int i = 0; i < 2; i++) {
+		
+	}*/
 	for (int numComp = 0; numComp < numberComponent; numComp++) {
 		double b = b_0 * R * Tcr[numComp] / p_cr[numComp];
 		D += R * Rho[numComp] / mu[numComp];
@@ -156,6 +199,49 @@ vector<vector<vector<double>>> pressure(N_x + 2, vector<vector<double>>(N_y + 2,
 vector<vector<vector<double>>> gamma_rho(N_x + 2, vector<vector<double>>(N_y + 2, vector<double>(N_z + 2)));
 vector<vector<vector<double>>> Sum_rho(N_x + 2, vector<vector<double>>(N_y + 2, vector<double>(N_z + 2)));
 
+/*const double M[kMax][kMax] = {
+   {  1.0,   1.0,   1.0,   1.0,   1.0,   1.0,   1.0,  1.0,  1.0, 1.0, 1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0}, // rho
+   {-30.0, -11.0, -11.0, -11.0, -11.0, -11.0, -11.0,  8.0,  8.0, 8.0, 8.0,  8.0,  8.0,  8.0,  8.0,  8.0,  8.0,  8.0,  8.0}, // e
+   { 12.0,  -4.0,  -4.0,  -4.0,  -4.0,  -4.0,  -4.0,  1.0,  1.0, 1.0, 1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0}, // eps
+   {  0.0,   1.0,  -1.0,   0.0,   0.0,   0.0,   0.0,  1.0, -1.0, 1.0, -1.0,  1.0, -1.0,  1.0, -1.0,  0.0,  0.0,  0.0,  0.0}, // jx
+   {  0.0,  -4.0,   4.0,   0.0,   0.0,   0.0,   0.0,  1.0, -1.0, 1.0, -1.0,  1.0, -1.0,  1.0, -1.0,  0.0,  0.0,  0.0,  0.0}, // qx
+   {  0.0,   0.0,   0.0,   1.0,  -1.0,   0.0,   0.0,  1.0,  1.0, -1.0, -1.0,  0.0,  0.0,  0.0,  0.0,  1.0, -1.0,  1.0, -1.0}, // jy
+   {  0.0,   0.0,   0.0,  -4.0,   4.0,   0.0,   0.0,  1.0,  1.0, -1.0, -1.0,  0.0,  0.0,  0.0,  0.0,  1.0, -1.0,  1.0, -1.0}, // qy
+   {  0.0,   0.0,   0.0,   0.0,   0.0,   1.0,  -1.0,  0.0,  0.0, 0.0, 0.0,  1.0,  1.0, -1.0, -1.0,  1.0,  1.0, -1.0, -1.0}, // jz
+   {  0.0,   0.0,   0.0,   0.0,   0.0,  -4.0,   4.0,  0.0,  0.0, 0.0, 0.0,  1.0,  1.0, -1.0, -1.0,  1.0,  1.0, -1.0, -1.0}, // qz
+   {  0.0,   2.0,   2.0,  -1.0,  -1.0,  -1.0,  -1.0,  1.0,  1.0, 1.0, 1.0,  1.0,  1.0,  1.0,  1.0, -2.0, -2.0, -2.0, -2.0}, // pxx
+   {  0.0,  -4.0,  -4.0,   2.0,   2.0,   2.0,   2.0,  1.0,  1.0, 1.0, 1.0,  1.0,  1.0,  1.0,  1.0, -2.0, -2.0, -2.0, -2.0}, // pi_xx
+   {  0.0,   0.0,   0.0,   1.0,   1.0,  -1.0,  -1.0,  1.0,  1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0,  0.0,  0.0,  0.0,  0.0}, // p_ww
+   {  0.0,   0.0,   0.0,  -2.0,  -2.0,   2.0,   2.0,  1.0,  1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0,  0.0,  0.0,  0.0,  0.0}, // pi_ww
+   {  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,  1.0, -1.0, -1.0, 1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0}, // p_xy
+   {  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,  0.0,  0.0, 0.0, 0.0,  0.0,  0.0,  0.0,  0.0,  1.0, -1.0, -1.0,  1.0}, // p_yz
+   {  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,  0.0,  0.0, 0.0, 0.0,  1.0, -1.0, -1.0,  1.0,  0.0,  0.0,  0.0,  0.0}, // p_xz
+   {  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,  1.0, -1.0, 1.0, -1.0, -1.0,  1.0, -1.0,  1.0,  0.0,  0.0,  0.0,  0.0}, // mx
+   {  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0, -1.0, -1.0, 1.0, 1.0,  0.0,  0.0,  0.0,  0.0,  1.0, -1.0,  1.0, -1.0}, // my
+   {  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,  0.0,  0.0, 0.0, 0.0,  1.0,  1.0, -1.0, -1.0, -1.0, -1.0,  1.0,  1.0}, // mz
+};
+
+const double Mi[kMax][kMax] = {
+   {1.0 / 19.0,  -5.0 / 399.0,   1.0 / 21.0,   0.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0,  0.0, 0.0, 0.0,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+   {1.0 / 19.0, -11.0 / 2394.0, -1.0 / 63.0,   1.0 / 10.0, -1.0 / 10.0, 0.0, 0.0,  0.0, 0.0, 1.0 / 18.0, -1.0 / 18.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0, 0.0},
+   {1.0 / 19.0, -11.0 / 2394.0, -1.0 / 63.0,  -1.0 / 10.0,  1.0 / 10.0, 0.0, 0.0, 0.0, 0.0, 1.0 / 18.0, -1.0 / 18.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0, 0.0},
+   {1.0 / 19.0, -11.0 / 2394.0, -1.0 / 63.0,   0.0, 0.0, 1.0 / 10.0, -1.0 / 10.0,  0.0, 0.0, -1.0 / 36.0,  1.0 / 36.0, 1.0 / 12.0, -1.0 / 12.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0},
+   {1.0 / 19.0, -11.0 / 2394.0, -1.0 / 63.0,   0.0, 0.0, -1.0 / 10.0, 1.0 / 10.0, 0.0, 0.0, -1.0 / 36.0,  1.0 / 36.0, 1.0 / 12.0, -1.0 / 12.0, 0.0, 0.0, 0.0,  0.0,  0.0, 0.0},
+   {1.0 / 19.0, -11.0 / 2394.0, -1.0 / 63.0,   0.0, 0.0, 0.0, 0.0,  1.0 / 10.0, -1.0 / 10.0, -1.0 / 36.0,  1.0 / 36.0, -1.0 / 12.0, 1.0 / 12.0, 0.0,  0.0, 0.0,  0.0, 0.0, 0.0},
+   {1.0 / 19.0, -11.0 / 2394.0, -1.0 / 63.0,   0.0, 0.0, 0.0, 0.0, -1.0 / 10.0,  1.0 / 10.0, -1.0 / 36.0,  1.0 / 36.0, -1.0 / 12.0, 1.0 / 12.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0},
+   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0,  1.0 / 10.0,  1.0 / 40.0, 1.0 / 10.0, 1.0 / 40.0,  0.0, 0.0,  1.0 / 36.0,  1.0 / 72.0, 1.0 / 12.0,  1.0 / 24.0, 1.0 / 4.0, 0.0,  0.0, 1.0 / 8.0, -1.0 / 8.0, 0.0},
+   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0, -1.0 / 10.0, -1.0 / 40.0, 1.0 / 10.0, 1.0 / 40.0,  0.0, 0.0,  1.0 / 36.0,  1.0 / 72.0, 1.0 / 12.0,  1.0 / 24.0, -1.0 / 4.0, 0.0,  0.0, -1.0 / 8.0, -1.0 / 8.0, 0.0},
+   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0,  1.0 / 10.0,  1.0 / 40.0, -1.0 / 10.0, -1.0 / 40.0,  0.0, 0.0,  1.0 / 36.0,  1.0 / 72.0, 1.0 / 12.0,  1.0 / 24.0, -1.0 / 4.0, 0.0,  0.0, 1.0 / 8.0, 1.0 / 8.0, 0.0},
+   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0, -1.0 / 10.0, -1.0 / 40.0, -1.0 / 10.0, -1.0 / 40.0,  0.0, 0.0,  1.0 / 36.0,  1.0 / 72.0, 1.0 / 12.0,  1.0 / 24.0, 1.0 / 4.0, 0.0,  0.0,-1.0 / 8.0, 1.0 / 8.0, 0.0},
+   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0,  1.0 / 10.0,  1.0 / 40.0,  0.0, 0.0,  1.0 / 10.0,  1.0 / 40.0,  1.0 / 36.0,  1.0 / 72.0, -1.0 / 12.0, -1.0 / 24.0, 0.0, 0.0,  1.0 / 4.0, -1.0 / 8.0, 0.0, 1.0 / 8.0},
+   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0, -1.0 / 10.0, -1.0 / 40.0,  0.0, 0.0,  1.0 / 10.0,  1.0 / 40.0,  1.0 / 36.0,  1.0 / 72.0, -1.0 / 12.0, -1.0 / 24.0, 0.0, 0.0, -1.0 / 4.0,  1.0 / 8.0, 0.0, 1.0 / 8.0},
+   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0,  1.0 / 10.0,  1.0 / 40.0,  0.0, 0.0, -1.0 / 10.0, -1.0 / 40.0,  1.0 / 36.0,  1.0 / 72.0, -1.0 / 12.0, -1.0 / 24.0, 0.0, 0.0, -1.0 / 4.0, -1.0 / 8.0, 0.0, -1.0 / 8.0},
+   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0, -1.0 / 10.0, -1.0 / 40.0,  0.0, 0.0, -1.0 / 10.0, -1.0 / 40.0,  1.0 / 36.0,  1.0 / 72.0, -1.0 / 12.0, -1.0 / 24.0, 0.0, 0.0,  1.0 / 4.0,  1.0 / 8.0, 0.0, -1.0 / 8.0},
+   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0,  0.0, 0.0, 1.0 / 10.0, 1.0 / 40.0,  1.0 / 10.0,  1.0 / 40.0, -1.0 / 18.0, -1.0 / 36.0, 0.0, 0.0, 0.0,  1.0 / 4.0, 0.0,  0.0, 1.0 / 8.0, -1.0 / 8.0},
+   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0,  0.0, 0.0, -1.0 / 10.0, -1.0 / 40.0,  1.0 / 10.0,  1.0 / 40.0, -1.0 / 18.0, -1.0 / 36.0, 0.0, 0.0, 0.0, -1.0 / 4.0, 0.0,  0.0, -1.0 / 8.0, -1.0 / 8.0},
+   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0,  0.0, 0.0, 1.0 / 10.0, 1.0 / 40.0, -1.0 / 10.0, -1.0 / 40.0, -1.0 / 18.0, -1.0 / 36.0, 0.0, 0.0, 0.0, -1.0 / 4.0, 0.0,  0.0, 1.0 / 8.0, 1.0 / 8.0},
+   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0,  0.0, 0.0, -1.0 / 10.0, -1.0 / 40.0, -1.0 / 10.0, -1.0 / 40.0, -1.0 / 18.0, -1.0 / 36.0, 0.0, 0.0,0.0,  1.0 / 4.0, 0.0,  0.0, -1.0 / 8.0, 1.0 / 8.0}};*/
+
 void SaveVTKFile(int tStep)
 {
 	stringstream fname;
@@ -189,17 +275,22 @@ void SaveVTKFile(int tStep)
 	for (int l = 1; l < N_z + 1; l++)
 		for (int j = 1; j < N_y + 1; j++)
 			for (int i = 1; i < N_x + 1; i++)
-				if (mask[i][j][l] == 0) {
-					vtk_file << rho[0][i][j][l] << " ";
-				}
-				else vtk_file << -10 << " ";
+				vtk_file << rho[0][i][j][l] << " ";
 	vtk_file << endl;
 
 	vtk_file << "VECTORS uflow1 double\n";
-	for (int l = 1; l < N_z + 1; l++)
-		for (int j = 1; j < N_y + 1; j++)
-			for (int i = 1; i < N_x + 1; i++)
-				vtk_file << ux[0][i][j][l] + g / 2 << " " << uy[0][i][j][l] << " " << uz[0][i][j][l] << " ";
+	for (int l = 1; l < N_z + 1; l++) {
+		for (int j = 1; j < N_y + 1; j++) {
+			for (int i = 1; i < N_x + 1; i++) {
+				if (mask[i][j][l] == 0) {
+					vtk_file << ux[0][i][j][l] << " " << uy[0][i][j][l] << " " << uz[0][i][j][l] << " ";
+				}
+				else {
+					vtk_file << 0 << " " << 0 << " " << 0 << " ";
+				}
+			}
+		}
+	}
 	vtk_file << endl;
 
 	vtk_file << "SCALARS rho2 double 1\n";
@@ -207,10 +298,7 @@ void SaveVTKFile(int tStep)
 	for (int l = 1; l < N_z + 1; l++)
 		for (int j = 1; j < N_y + 1; j++)
 			for (int i = 1; i < N_x + 1; i++)
-				if (mask[i][j][l] == 0) {
-					vtk_file << rho[1][i][j][l] << " ";
-				}
-				else vtk_file << -10 << " ";
+				vtk_file << rho[1][i][j][l] << " ";
 	vtk_file << endl;
 
 
@@ -219,35 +307,55 @@ void SaveVTKFile(int tStep)
 	for (int l = 1; l < N_z + 1; l++)
 		for (int j = 1; j < N_y + 1; j++)
 			for (int i = 1; i < N_x + 1; i++)
-				if (mask[i][j][l] == 0) {
-					vtk_file << rho[2][i][j][l] << " ";
-				}
-				else vtk_file << -10 << " ";
+				vtk_file << rho[2][i][j][l] << " ";
 	vtk_file << endl;
 
 	vtk_file << "SCALARS rho_sum double 1\n";
 	vtk_file << "LOOKUP_TABLE default\n";
-	for (int l = 1; l < N_z + 1; l++)
-		for (int j = 1; j < N_y + 1; j++)
-			for (int i = 1; i < N_x + 1; i++)
+	for (int l = 1; l < N_z + 1; l++) {
+		for (int j = 1; j < N_y + 1; j++) {
+			for (int i = 1; i < N_x + 1; i++) {
 				if (mask[i][j][l] == 0) {
 					vtk_file << rho[1][i][j][l] + rho[0][i][j][l] + rho[2][i][j][l] << " ";
 				}
-				else vtk_file << -10 << " ";
+				else {
+					vtk_file << 0 << " ";
+				}
+			}
+		}
+	}
 	vtk_file << endl;
 
+
+
 	vtk_file << "VECTORS uflow2 double\n";
-	for (int l = 1; l < N_z + 1; l++)
-		for (int j = 1; j < N_y + 1; j++)
-			for (int i = 1; i < N_x + 1; i++)
-				vtk_file << ux[1][i][j][l] + g / 2 << " " << uy[1][i][j][l] << " " << uz[1][i][j][l] << " ";
+	for (int l = 1; l < N_z + 1; l++) {
+		for (int j = 1; j < N_y + 1; j++) {
+			for (int i = 1; i < N_x + 1; i++) {
+				if (mask[i][j][l] == 0) {
+					vtk_file << ux[1][i][j][l] << " " << uy[1][i][j][l] << " " << uz[1][i][j][l] << " ";
+				}
+				else {
+					vtk_file << 0 << " " << 0 << " " << 0 << " ";
+				}
+			}
+		}
+	}
 	vtk_file << endl;
 
 	vtk_file << "VECTORS uflow3 double\n";
-	for (int l = 1; l < N_z + 1; l++)
-		for (int j = 1; j < N_y + 1; j++)
-			for (int i = 1; i < N_x + 1; i++)
-				vtk_file << ux[2][i][j][l] + g / 2 << " " << uy[2][i][j][l] << " " << uz[2][i][j][l] << " ";
+	for (int l = 1; l < N_z + 1; l++) {
+		for (int j = 1; j < N_y + 1; j++) {
+			for (int i = 1; i < N_x + 1; i++) {
+				if (mask[i][j][l] == 0) {
+					vtk_file << ux[2][i][j][l] << " " << uy[2][i][j][l] << " " << uz[2][i][j][l] << " ";
+				}
+				else {
+					vtk_file << 0 << " " << 0 << " " << 0 << " ";
+				}
+			}
+		}
+	}
 	vtk_file << endl;
 
 	vtk_file << "SCALARS mask double 1\n";
@@ -273,6 +381,68 @@ void SaveVTKFile(int tStep)
 
 int main() {
 	system("mkdir VTK");
+	cout << sizeof(Z) / sizeof(Z[0]) << endl;
+	cout << sizeof(Muc) / sizeof(Muc[0]) << endl;
+	K_ij[1][0] = 0.025;
+	K_ij[0][1] = 0.025;
+	K_ij[2][0] = 0.01;
+	K_ij[0][2] = 0.01;
+	K_ij[3][0] = 0.09;
+	K_ij[0][3] = 0.09;
+	K_ij[4][0] = 0.095;
+	K_ij[0][4] = 0.095;
+
+	K_ij[2][1] = 0.005;
+	K_ij[1][2] = 0.005;
+	K_ij[3][1] = 0.01;
+	K_ij[1][3] = 0.01;
+	K_ij[4][1] = 0.01;
+	K_ij[1][4] = 0.01;
+
+	K_ij[3][2] = 0.005;
+	K_ij[2][3] = 0.005;
+	K_ij[4][2] = 0.01;
+	K_ij[2][4] = 0.01;
+
+	double Zi_Zj = 0;
+	for (int i = 0; i < 2; i++) {
+		for (int j = 2; j < 5; j++) {
+			Zi_Zj += Z[i] * Z[j];
+		}
+	}
+	for (int i = 0; i < 2; i++) {
+		for (int j = 2; j < 5; j++) {
+			k[0][1] += Z[i] * Z[j] * K_ij[i][j] / Zi_Zj;
+		}
+	}
+	k[1][0] = k[0][1];
+	Zi_Zj = 0;
+	for (int i = 0; i < 2; i++) {
+		for (int j = 5; j < 37; j++) {
+			Zi_Zj += Z[i] * Z[j];
+		}
+	}
+	for (int i = 0; i < 2; i++) {
+		for (int j = 5; j < 37; j++) {
+			k[0][2] += Z[i] * Z[j] * K_ij[i][j] / Zi_Zj;
+		}
+	}
+	k[2][0] = k[0][2];
+	Zi_Zj = 0;
+	for (int i = 2; i < 5; i++) {
+		for (int j = 5; j < 37; j++) {
+			Zi_Zj += Z[i] * Z[j];
+		}
+	}
+	for (int i = 2; i < 5; i++) {
+		for (int j = 5; j < 37; j++) {
+			k[1][2] += Z[i] * Z[j] * K_ij[i][j] / Zi_Zj;
+		}
+	}
+	k[2][1] = k[1][2];
+
+
+
 
 	/* initial density */
 
@@ -285,64 +455,81 @@ int main() {
 		for (int i = 1; i < N_x + 1; i++)
 			for (int l = 1; l < N_z + 1; l++)
 				rho[1][i][j][l] = rho_mix - rho[0][i][j][l] + 5 * static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
-*/
-	for (int j = 1; j < 1; j++) {
-		for (int i = 1; i < N_x + 1; i++) {
+
+	for (int j = 1; j < N_y + 1; j++) {
+		for (int i = 1; i < N_x / 3; i++) {
 			for (int l = 1; l < N_z + 1; l++) {
-				if (mask[i][j][l] == 0) {
-					rho[0][i][j][l] = 9.66966;
-					rho[1][i][j][l] = 54.389;
-					rho[2][i][j][l] = 16.4739;
-				}
+				rho[0][i][j][l] = 9.66966;
+				rho[1][i][j][l] = 54.389;
+				rho[2][i][j][l] = 16.4739;
 			}
 		}
 	}
 
 	for (int j = 1; j < N_y + 1; j++) {
+			for (int l = 1; l < N_z + 1; l++) {
+				rho[0][0][j][l] = 300.66966;
+				rho[1][0][j][l] = 54.389;
+				rho[2][0][j][l] = 16.4739;
+			}
+	}
+
+	for (int j = 1; j < N_y + 1; j++) {
+		for (int i = N_x / 3; i < N_x + 1; i++) {
+			for (int l = 1; l < N_z + 1; l++) {
+				rho[0][i][j][l] = 21.5944;
+				rho[1][i][j][l] = 357.342;
+				rho[2][i][j][l] = 41.8048;
+			}
+		}
+	}
+
+	for (int j = 1; j < N_y + 1; j++) {
+		for (int i = 1; i < N_x + 1; i++) {
+			for (int l = 1; l < N_z + 1; l++) {
+
+					rho[0][i][j][l] = 120;
+					rho[1][i][j][l] = 70;
+					rho[2][i][j][l] = 84;
+				
+			}
+		}
+	}*/
+
+	/*for (int j = 1; j < N_y + 1; j++) {
 		for (int l = 1; l < N_z + 1; l++) {
-			rho[0][0][j][l] = 37.66966;
-			rho[1][0][j][l] = 387.342;
-			rho[2][0][j][l] = 61.8048;
-			rho[0][N_x + 1][j][l] = 21.5944;
-			rho[1][N_x + 1][j][l] = 357.342;
-			rho[2][N_x + 1][j][l] = 41.8048;
+			rho[0][0][j][l] = 141;
+			rho[1][0][j][l] = 84;
+			rho[2][0][j][l] = 101;
+			rho[0][N_x + 1][j][l] = 116;
+			rho[1][N_x + 1][j][l] = 59;
+			rho[2][N_x + 1][j][l] = 76;
 		}
-	}
-
-	for (int j = 0; j < N_y + 1; j++) {
-		for (int i = 1; i < N_x + 1; i++) {
-			for (int l = 1; l < N_z + 1; l++) {
-				if (mask[i][j][l] == 0) {
-					rho[0][i][j][l] = 21.5944;
-					rho[1][i][j][l] = 357.342;
-					rho[2][i][j][l] = 41.8048;
-				}
-			}
-		}
-	}
-
-	for (int i = 1; i < N_x + 1; i++) {
-		for (int j = 1; j < N_y + 1; j++) {
-			for (int l = 1; l < N_z + 1; l++) {
-				if (mask[i][j][l] == 1) {
-					rho[0][i][j][l] = -10;
-					rho[1][i][j][l] = -10;
-					rho[2][i][j][l] = -10;
-				}
-			}
-		}
-	}
-	/*vector<double> temp(3, 0.0);
+	}*/
+	vector<double> temp(3, 0.0);
+	temp = mixture(percent1, percent2);
+	std::cout << temp[1] << std::endl;
+	std::cout << temp[2] << std::endl;
 	for (int j = 1; j < N_y + 1; j++) {
 		for (int i = 1; i < N_x + 1; i++) {
 			for (int l = 1; l < N_z + 1; l++) {
-				temp = mixture(percent1, percent2);
+
 				rho[0][i][j][l] = temp[0];
 				rho[1][i][j][l] = temp[1] + 2 * static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
 				rho[2][i][j][l] = temp[2];
 			}
 		}
-	}*/
+	}
+	//for (int j = 1; j < N_y + 1; j++) {
+	//	for (int i = N_x/3; i < N_x + 1; i++) {
+	//		for (int l = 1; l < N_z + 1; l++) {
+	//			//temp = mixture(percent1, percent2);
+	//			rho[0][i][j][l] = rho_cr[0] + 10;
+	//			//rho[1][i][j][l] = temp[1] + 2 * static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
+	//			//rho[2][i][j][l] = temp[2];
+	//		}
+	//	}
+	//}
 
 
 	/* the law of conservation of mass */
@@ -352,9 +539,14 @@ int main() {
 			for (int l = 1; l < N_z + 1; l++) {
 				Full_rho1 += rho[0][i][j][l];
 				ux[0][i][j][l] = uy[0][i][j][l] = uz[0][i][j][l] = dux[0][i][j][l] = duy[0][i][j][l] = duz[0][i][j][l] = 0.0;
-				ux[0][i][j][l] = 0.0;
+
 				Full_rho2 += rho[1][i][j][l];
 				ux[1][i][j][l] = uy[1][i][j][l] = uz[1][i][j][l] = dux[1][i][j][l] = duy[1][i][j][l] = duz[1][i][j][l] = 0.0;
+				Full_rho3 += rho[2][i][j][l];
+				ux[2][i][j][l] = uy[2][i][j][l] = uz[2][i][j][l] = dux[2][i][j][l] = duy[2][i][j][l] = duz[2][i][j][l] = 0.0;
+				ux[2][i][j][l] = 0.1;
+				uy[2][i][j][l] = 0.5;
+				uz[2][i][j][l] = 0.2;
 			}
 		}
 	}
@@ -375,85 +567,52 @@ int main() {
 		}
 	}
 
-	/*for (int iter = 0; iter < 4; iter++) {
-		for (int i = 1 + 40 * iter; i < 11 + 40 * iter; i++) {
-			for (int j = 50; j < 101; j++) {
-				mask[i][j][1] = 1;
-			}
+	/*for (int i = 0; i < 5; i++)
+	{
+		for (int j = 0; j < 95; j++)
+		{
+			mask[i][j][1] = 1.;
 		}
-	}
-
-	for (int iter = 0; iter < 3; iter++) {
-		for (int i = 20 + 40 * iter; i < 31 + 40 * iter; i++) {
-			for (int j = 60; j < 111; j++) {
-				mask[i][j][1] = 1;
-			}
+	}for (int i = 25; i < 31; i++)
+	{
+		for (int j = 0; j < 95; j++)
+		{
+			mask[i][j][1] = 1.;
 		}
-	}
-
-	for (int i = 1; i < 23; i++) {
-		for (int j = 1; j < 51; j++) {
-			mask[i][j][1] = 1;
+	}for (int i = 10; i < 20; i++)
+	{
+		for (int j = 60; j < 101; j++)
+		{
+			mask[i][j][1] = 1.;
 		}
-	}
-
-	for (int i = 109; i < 131; i++) {
-		for (int j = 1; j < 51; j++) {
-			mask[i][j][1] = 1;
+	}for (int i = 5; i < 13; i++)
+	{
+		for (int j = 0; j < 55; j++)
+		{
+			mask[i][j][1] = 1.;
 		}
-	}
-	for (int i = 28; i < 63; i++) {
-		for (int j = 1; j < 51; j++) {
-			mask[i][j][1] = 1;
-		}
-	}
-	for (int i = 68; i < 103; i++) {
-		for (int j = 1; j < 51; j++) {
-			mask[i][j][1] = 1;
+	}for (int i = 18; i < 25; i++)
+	{
+		for (int j = 0; j < 55; j++)
+		{
+			mask[i][j][1] = 1.;
 		}
 	}*/
-	std::ifstream in("D:\openMP\practice_GPN\file1.txt"); // окрываем файл для чтения
-	if (in.is_open())
-	{
-		for (int j = 0; j <= N_y + 1; ++j)
-			for (int i = 0; i <= N_x + 1; ++i) {
-				in >> mask[i][j][1];
-			}
-	}
-	in.close();
-	/*for (int iter = 0; iter < 4; iter++) {
-		for (int i = 1 + 16 * iter; i < 11 + 16 * iter; i++) {
-			for (int j = 1; j < 58; j++) {
-				mask[i][j][1] = 1;
-			}
-		}
-	}
 
 
-	ofstream out;          // поток для записи
-	out.open("simpleMask.txt");      // открываем файл для записи
-	if (out.is_open())
-	{
-		for (int j = 1; j < N_y + 1; j++) {
-			for (int i = 1; i < N_x + 1; i++) {
-				out << mask[i][j][1] << " ";
-			}
-			out << endl;
-		}
 
-	}
-	out.close();
-	std::cout << "File has been written" << std::endl;
 	double vol = (double)volumeObs / N_x / N_y / N_z;
 	cout << (double)(1. - vol) << endl; // porosity
 	/* vector of possible velocities*/
+
 	vector<vector<double>> c(kMax, vector<double>(3));
 	vector <int> dx = { 0, 1, -1, 0,  0, 0,  0, 1, -1,  1, -1, 1, -1,  1, -1, 0,  0,  0,  0 };
 	vector <int> dy = { 0, 0,  0, 1, -1, 0,  0, 1,  1, -1, -1, 0,  0,  0,  0, 1, -1,  1, -1 };
 	vector <int> dz = { 0, 0,  0, 0,  0, 1, -1, 0,  0,  0,  0, 1,  1, -1, -1, 1,  1, -1, -1 };
 	vector <int> index = { 0, 1, 2, 3, 4, 5, 6, 7,  8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 };
 	vector <int> opposite_index = { 0, 2, 1, 4, 3, 6, 5, 10, 9, 8,  7, 14, 13, 12, 11, 18, 17, 16, 15 };
-	vector <double> s_ii = { 0, s1, s2, 0,  s4, 0,  s4, 0, s4,  s9, s10, s9, s10, s13, s13, s13, s16, s16, s16 };
+	vector <double> s_ii = { 0, s1, s2, s3,  s4, s3,  s4, s3, s4,  s9, s10, s9, s10, s13, s13, s13, s16, s16, s16 };
+
 
 #pragma omp parallel for
 	for (int j = 1; j < 19; j++) {
@@ -528,51 +687,51 @@ int main() {
 			}
 		}
 	}
-
-	/*	for (int i = 1; i < N_x + 1; i++) {
-			for (int j = 1; j < N_y + 1; j++) {
-				for (int l = 1; l < N_z + 1; l++) {
-					for (int s = 0; s < kMax; s++) {
-						m[s] = 0;
-						for (int s1 = 0; s1 < kMax; s1++) {
-							m[s] += M[s][s1] * f[0][s1][i][j][l];
-						}
+	/*int numComp = 2;
+	for (int i = 1; i < N_x + 1; i++) {
+		for (int j = 1; j < N_y + 1; j++) {
+			for (int l = 1; l < N_z + 1; l++) {
+				for (int s = 0; s < kMax; s++) {
+					m[s] = 0;
+					for (int s1 = 0; s1 < kMax; s1++) {
+						m[s] += M[s][s1] * F_e(c[s1], ux[numComp][i][j][l], uy[numComp][i][j][l], uz[numComp][i][j][l], w[s1], rho[numComp][i][j][l]);
 					}
 				}
 			}
 		}
+	}
 
-		for (int j = 1; j < N_y + 1; j++) {
-			for (int i = 1; i < N_x + 1; i++) {
-				for (int l = 1; l < N_z + 1; l++) {
-					m_eq[0] = rho[0][i][j][l];
-					m_eq[1] = -11 * rho[0][i][j][l] + 19 * rho[0][i][j][l] * squaring(ux[0][i][j][l], uy[0][i][j][l], uz[0][i][j][l]) * delta_t * delta_t / h / h;
-					m_eq[2] = w_e * rho[0][i][j][l] + w_ej * rho[0][i][j][l] * squaring(ux[0][i][j][l], uy[0][i][j][l], uz[0][i][j][l]) * delta_t * delta_t / h / h;
-					m_eq[3] = ux[0][i][j][l] * rho[0][i][j][l] * delta_t / h;
-					m_eq[4] = -2. / 3. * ux[0][i][j][l] * rho[0][i][j][l] * delta_t / h;
-					m_eq[5] = uy[0][i][j][l] * rho[0][i][j][l] * delta_t / h;
-					m_eq[6] = -2. / 3. * uy[0][i][j][l] * rho[0][i][j][l] * delta_t / h;
-					m_eq[7] = uz[0][i][j][l] * rho[0][i][j][l] * delta_t / h;
-					m_eq[8] = -2. / 3. * uz[0][i][j][l] * rho[0][i][j][l] * delta_t / h;
-					m_eq[9] = 1 / rho[0][i][j][l] * (2 * m_eq[3] * m_eq[3] - (m_eq[5] * m_eq[5] + m_eq[7] * m_eq[7]));
-					m_eq[10] = w_xx * m_eq[9];
-					m_eq[11] = 1 / rho[0][i][j][l] * (m_eq[5] * m_eq[5] - m_eq[7] * m_eq[7]);
-					m_eq[12] = w_xx * m_eq[11];
-					m_eq[13] = 1 / rho[0][i][j][l] * m_eq[3] * m_eq[5];
-					m_eq[14] = 1 / rho[0][i][j][l] * m_eq[7] * m_eq[5];
-					m_eq[15] = 1 / rho[0][i][j][l] * m_eq[3] * m_eq[7];
-					m_eq[16] = 0;
-					m_eq[17] = 0;
-					m_eq[18] = 0;
-				}
+	for (int j = 1; j < N_y + 1; j++) {
+		for (int i = 1; i < N_x + 1; i++) {
+			for (int l = 1; l < N_z + 1; l++) {
+				m_eq[0] = rho[numComp][i][j][l];
+				m_eq[1] = -11 * rho[numComp][i][j][l] + 19 * rho[numComp][i][j][l] * squaring(ux[numComp][i][j][l], uy[numComp][i][j][l], uz[numComp][i][j][l]) * delta_t * delta_t / h / h;
+				m_eq[2] = w_e * rho[numComp][i][j][l] + w_ej * rho[numComp][i][j][l] * squaring(ux[numComp][i][j][l], uy[numComp][i][j][l], uz[numComp][i][j][l]) * delta_t * delta_t / h / h;
+				m_eq[3] = ux[numComp][i][j][l] * rho[numComp][i][j][l] * delta_t / h;
+				m_eq[4] = -2. / 3. * ux[numComp][i][j][l] * rho[numComp][i][j][l] * delta_t / h;
+				m_eq[5] = uy[numComp][i][j][l] * rho[numComp][i][j][l] * delta_t / h;
+				m_eq[6] = -2. / 3. * uy[numComp][i][j][l] * rho[numComp][i][j][l] * delta_t / h;
+				m_eq[7] = uz[numComp][i][j][l] * rho[numComp][i][j][l] * delta_t / h;
+				m_eq[8] = -2. / 3. * uz[numComp][i][j][l] * rho[numComp][i][j][l] * delta_t / h;
+				m_eq[9] = 1 / rho[numComp][i][j][l] * (2 * m_eq[3] * m_eq[3] - (m_eq[5] * m_eq[5] + m_eq[7] * m_eq[7]));
+				m_eq[10] = w_xx * m_eq[9];
+				m_eq[11] = 1 / rho[numComp][i][j][l] * (m_eq[5] * m_eq[5] - m_eq[7] * m_eq[7]);
+				m_eq[12] = w_xx * m_eq[11];
+				m_eq[13] = 1 / rho[numComp][i][j][l] * m_eq[3] * m_eq[5];
+				m_eq[14] = 1 / rho[numComp][i][j][l] * m_eq[7] * m_eq[5];
+				m_eq[15] = 1 / rho[numComp][i][j][l] * m_eq[3] * m_eq[7];
+				m_eq[16] = 0;
+				m_eq[17] = 0;
+				m_eq[18] = 0;
 			}
 		}
+	}
 
-		for (int s = 0; s < kMax; s++) {
-			cout << s << "   " << m[s] << "   " << m_eq[s] << endl;
-		}
-		exit(1);
-		*/
+	for (int s = 0; s < kMax; s++) {
+		cout << s << "   " << m[s] << "   " << m_eq[s] << endl;
+	}
+	exit(1);*/
+
 	auto begin = chrono::steady_clock::now();
 	for (int t = 0; t < FullTime + 1; t++) {
 
@@ -580,16 +739,14 @@ int main() {
 
 		buf = f;
 
-
 		for (int numComp = 0; numComp < numberComponent; numComp++) {
 
 			if (t < RelaxTime) {
 
-
 				for (size_t l = 1; l < N_z + 1; l++) {
 					for (size_t j = 1; j < N_y + 1; j++) {
 						buf[numComp][1][0][j][l] = buf[numComp][2][1][j][l];
-						buf[numComp][2][N_x + 1][j][l] = buf[numComp][1][N_x][j][l];
+						buf[numComp][2][N_x + 1][j][l] = coef * buf[numComp][1][N_x][j][l];
 					};
 				};
 				for (size_t j = 1; j < N_y + 1; j++) {
@@ -599,12 +756,12 @@ int main() {
 				}
 				for (size_t j = 1; j < N_y + 1; j++) {
 					for (size_t l = 0; l < N_z + 1; l++) {
-						buf[numComp][8][N_x + 1][j][l] = buf[numComp][9][N_x][j + 1][l];
+						buf[numComp][8][N_x + 1][j][l] = coef * buf[numComp][9][N_x][j + 1][l];
 					}
 				}
 				for (size_t j = 1; j < N_y + 1; j++) {
 					for (size_t l = 0; l < N_z + 1; l++) {
-						buf[numComp][10][N_x + 1][j][l] = buf[numComp][7][N_x][j - 1][l];
+						buf[numComp][10][N_x + 1][j][l] = coef * buf[numComp][7][N_x][j - 1][l];
 					}
 				}
 				for (size_t j = 1; j < N_y + 1; j++) {
@@ -621,13 +778,13 @@ int main() {
 
 				for (size_t l = 1; l < N_z + 1; l++) {
 					for (size_t j = 0; j < N_y + 1; j++) {
-						buf[numComp][12][N_x + 1][j][l] = buf[numComp][13][N_x][j][l + 1];
+						buf[numComp][12][N_x + 1][j][l] = coef * buf[numComp][13][N_x][j][l + 1];
 					}
 				}
 
 				for (size_t l = 1; l < N_z + 1; l++) {
 					for (size_t j = 0; j < N_y + 1; j++) {
-						buf[numComp][14][N_x + 1][j][l] = buf[numComp][11][N_x][j][l - 1];
+						buf[numComp][14][N_x + 1][j][l] = coef * buf[numComp][11][N_x][j][l - 1];
 					}
 				}
 
@@ -636,6 +793,8 @@ int main() {
 						buf[numComp][13][0][j][l] = buf[numComp][12][1][j][l - 1];
 					}
 				}
+
+
 			}
 			else {
 				g = 0;
@@ -643,17 +802,15 @@ int main() {
 				buf[numComp][2][N_x + 1] = buf[numComp][2][N_x];
 				buf[numComp][7][0] = buf[numComp][7][1];
 				buf[numComp][8][N_x + 1] = buf[numComp][8][N_x];
-				buf[numComp][10][N_x + 1] = buf[numComp][10][N_x];
-				buf[numComp][9][0] = buf[numComp][9][1];
+				buf[numComp][9][N_x + 1] = buf[numComp][9][N_x];
+				buf[numComp][10][0] = buf[numComp][10][1];
 				buf[numComp][11][0] = buf[numComp][11][1];
 				buf[numComp][12][N_x + 1] = buf[numComp][12][N_x];
-				buf[numComp][14][N_x + 1] = buf[numComp][14][N_x];
-				buf[numComp][13][0] = buf[numComp][13][1];
+				buf[numComp][13][N_x + 1] = buf[numComp][13][N_x];
+				buf[numComp][14][0] = buf[numComp][14][1];
 			}
 
-
-			// movement with walls
-
+			/* movement with walls*/
 			for (int i = 1; i < N_x + 1; i++) {
 				for (int l = 1; l < N_z + 1; l++) {
 					buf[numComp][3][i][0][l] = buf[numComp][4][i][1][l];
@@ -719,9 +876,215 @@ int main() {
 					buf[numComp][17][i][0][l] = buf[numComp][16][i][1][l - 1];
 				}
 			}
+			/*for (int i = 1; i < N_x + 1; i++) {
+				for (int l = 1; l < N_z + 1; l++) {
+					buf[numComp][3][i][0][l] = buf[numComp][4][i][1][l];
+					buf[numComp][4][i][N_y + 1][l] = buf[numComp][3][i][N_y][l];
+				}
+			}
+
+			for (int i = 1; i < N_x + 1; i++) {
+				for (int j = 1; j < N_y + 1; j++) {
+					buf[numComp][5][i][j][0] = buf[numComp][5][i][j][N_z];
+					buf[numComp][6][i][j][N_z + 1] = buf[numComp][6][i][j][1];
+				}
+			}
+
+			for (int i = 0; i < N_x + 1; i++) {
+				for (int l = 1; l < N_z + 1; l++) {
+					buf[numComp][7][i][0][l] = buf[numComp][10][i + 1][1][l];
+					buf[numComp][9][i][N_y + 1][l] = buf[numComp][8][i + 1][N_y][l];
+				}
+			}
+			for (int i = 1; i < N_x + 2; i++) {
+				for (int l = 1; l < N_z + 1; l++) {
+					buf[numComp][10][i][N_y + 1][l] = buf[numComp][7][i - 1][N_y][l];
+					buf[numComp][8][i][0][l] = buf[numComp][9][i - 1][1][l];
+				}
+			}
+
+			for (int i = 0; i < N_x + 1; i++) {
+				for (int j = 1; j < N_y + 1; j++) {
+					buf[numComp][11][i][j][0] = buf[numComp][11][i][j][N_z];
+					buf[numComp][13][i][j][N_z + 1] = buf[numComp][13][i][j][1];
+				}
+			}
+			for (int i = 1; i < N_x + 2; i++) {
+				for (int j = 1; j < N_y + 1; j++) {
+					buf[numComp][14][i][j][N_z + 1] = buf[numComp][14][i][j][1];
+					buf[numComp][12][i][j][0] = buf[numComp][12][i][j][N_z];
+				}
+			}
+
+			for (int i = 1; i < N_x + 1; i++) {
+				for (int j = 0; j < N_y + 1; j++) {
+					buf[numComp][15][i][j][0] = buf[numComp][15][i][j][N_z];
+					buf[numComp][17][i][j][N_z + 1] = buf[numComp][17][i][j][1];
+				}
+			}
+			for (int i = 1; i < N_x + 1; i++) {
+				for (int j = 1; j < N_y + 2; j++) {
+					buf[numComp][18][i][j][N_z + 1] = buf[numComp][18][i][j][1];
+					buf[numComp][16][i][j][0] = buf[numComp][16][i][j][N_z];
+				}
+			}
+
+			for (int i = 1; i < N_x + 1; i++) {
+				for (int l = 0; l < N_z + 1; l++) {
+					buf[numComp][15][i][0][l] = buf[numComp][18][i][1][l + 1];
+					buf[numComp][16][i][N_y + 1][l] = buf[numComp][17][i][N_y][l + 1];
+				}
+			}
+			for (int i = 0; i < N_x + 1; i++) {
+				for (int l = 1; l < N_z + 2; l++) {
+					buf[numComp][18][i][N_y + 1][l] = buf[numComp][15][i][N_y][l - 1];
+					buf[numComp][17][i][0][l] = buf[numComp][16][i][1][l - 1];
+				}
+			}*/
 		}
 
-		for (int j = 1; j < N_y + 1; j++) {
+
+		/*		for (int numComp = 0; numComp < numberComponent; numComp++) {
+
+					if (t < RelaxTime) {
+
+
+						for (size_t l = 1; l < N_z + 1; l++) {
+							for (size_t j = 1; j < N_y + 1; j++) {
+								buf[numComp][1][0][j][l] = buf[numComp][2][1][j][l];
+								buf[numComp][2][N_x + 1][j][l] = buf[numComp][1][N_x][j][l];
+							};
+						};
+						for (size_t j = 1; j < N_y + 1; j++) {
+							for (size_t l = 1; l < N_z + 1; l++) {
+								buf[numComp][7][0][j][l] = buf[numComp][10][1][j + 1][l];
+							}
+						}
+						for (size_t j = 1; j < N_y + 1; j++) {
+							for (size_t l = 0; l < N_z + 1; l++) {
+								buf[numComp][8][N_x + 1][j][l] = buf[numComp][9][N_x][j + 1][l];
+							}
+						}
+						for (size_t j = 1; j < N_y + 1; j++) {
+							for (size_t l = 0; l < N_z + 1; l++) {
+								buf[numComp][10][N_x + 1][j][l] = buf[numComp][7][N_x][j - 1][l];
+							}
+						}
+						for (size_t j = 1; j < N_y + 1; j++) {
+							for (size_t l = 0; l < N_z + 1; l++) {
+								buf[numComp][9][0][j][l] = buf[numComp][8][1][j - 1][l];
+							}
+						}
+
+						for (size_t l = 1; l < N_z + 1; l++) {
+							for (size_t j = 0; j < N_y + 1; j++) {
+								buf[numComp][11][0][j][l] = buf[numComp][14][1][j][l + 1];
+							}
+						}
+
+						for (size_t l = 1; l < N_z + 1; l++) {
+							for (size_t j = 0; j < N_y + 1; j++) {
+								buf[numComp][12][N_x + 1][j][l] = buf[numComp][13][N_x][j][l + 1];
+							}
+						}
+
+						for (size_t l = 1; l < N_z + 1; l++) {
+							for (size_t j = 0; j < N_y + 1; j++) {
+								buf[numComp][14][N_x + 1][j][l] = buf[numComp][11][N_x][j][l - 1];
+							}
+						}
+
+						for (size_t l = 1; l < N_z + 1; l++) {
+							for (size_t j = 0; j < N_y + 1; j++) {
+								buf[numComp][13][0][j][l] = buf[numComp][12][1][j][l - 1];
+							}
+						}
+					}
+					else {
+						g = 0;
+						buf[numComp][1][0] = buf[numComp][1][1];
+						buf[numComp][2][N_x + 1] = buf[numComp][2][N_x];
+						buf[numComp][7][0] = buf[numComp][7][1];
+						buf[numComp][8][N_x + 1] = buf[numComp][8][N_x];
+						buf[numComp][10][N_x + 1] = buf[numComp][10][N_x];
+						buf[numComp][9][0] = buf[numComp][9][1];
+						buf[numComp][11][0] = buf[numComp][11][1];
+						buf[numComp][12][N_x + 1] = buf[numComp][12][N_x];
+						buf[numComp][14][N_x + 1] = buf[numComp][14][N_x];
+						buf[numComp][13][0] = buf[numComp][13][1];
+					}
+
+
+					// movement with walls
+
+					for (int i = 1; i < N_x + 1; i++) {
+						for (int l = 1; l < N_z + 1; l++) {
+							buf[numComp][3][i][0][l] = buf[numComp][4][i][1][l];
+							buf[numComp][4][i][N_y + 1][l] = buf[numComp][3][i][N_y][l];
+						}
+					}
+
+					for (int i = 1; i < N_x + 1; i++) {
+						for (int j = 1; j < N_y + 1; j++) {
+							buf[numComp][5][i][j][0] = buf[numComp][6][i][j][1];
+							buf[numComp][6][i][j][N_z + 1] = buf[numComp][5][i][j][N_z];
+						}
+					}
+
+					for (int i = 0; i < N_x + 1; i++) {
+						for (int l = 1; l < N_z + 1; l++) {
+							buf[numComp][7][i][0][l] = buf[numComp][10][i + 1][1][l];
+							buf[numComp][9][i][N_y + 1][l] = buf[numComp][8][i + 1][N_y][l];
+						}
+					}
+					for (int i = 1; i < N_x + 2; i++) {
+						for (int l = 1; l < N_z + 1; l++) {
+							buf[numComp][10][i][N_y + 1][l] = buf[numComp][7][i - 1][N_y][l];
+							buf[numComp][8][i][0][l] = buf[numComp][9][i - 1][1][l];
+						}
+					}
+
+					for (int i = 0; i < N_x + 1; i++) {
+						for (int j = 1; j < N_y + 1; j++) {
+							buf[numComp][11][i][j][0] = buf[numComp][14][i + 1][j][1];
+							buf[numComp][13][i][j][N_z + 1] = buf[numComp][12][i + 1][j][N_z];
+						}
+					}
+					for (int i = 1; i < N_x + 2; i++) {
+						for (int j = 1; j < N_y + 1; j++) {
+							buf[numComp][14][i][j][N_z + 1] = buf[numComp][11][i - 1][j][N_z];
+							buf[numComp][12][i][j][0] = buf[numComp][13][i - 1][j][1];
+						}
+					}
+
+					for (int i = 1; i < N_x + 1; i++) {
+						for (int j = 0; j < N_y + 1; j++) {
+							buf[numComp][15][i][j][0] = buf[numComp][18][i][j + 1][1];
+							buf[numComp][17][i][j][N_z + 1] = buf[numComp][16][i][j + 1][N_z];
+						}
+					}
+					for (int i = 1; i < N_x + 1; i++) {
+						for (int j = 1; j < N_y + 2; j++) {
+							buf[numComp][18][i][j][N_z + 1] = buf[numComp][15][i][j - 1][N_z];
+							buf[numComp][16][i][j][0] = buf[numComp][17][i][j - 1][1];
+						}
+					}
+
+					for (int i = 1; i < N_x + 1; i++) {
+						for (int l = 0; l < N_z + 1; l++) {
+							buf[numComp][15][i][0][l] = buf[numComp][18][i][1][l + 1];
+							buf[numComp][16][i][N_y + 1][l] = buf[numComp][17][i][N_y][l + 1];
+						}
+					}
+					for (int i = 0; i < N_x + 1; i++) {
+						for (int l = 1; l < N_z + 2; l++) {
+							buf[numComp][18][i][N_y + 1][l] = buf[numComp][15][i][N_y][l - 1];
+							buf[numComp][17][i][0][l] = buf[numComp][16][i][1][l - 1];
+						}
+					}
+				}
+		*/
+		/*for (int j = 1; j < N_y + 1; j++) {
 			for (int l = 1; l < N_z + 1; l++) {
 				for (int s = 0; s < 19; s++) {
 					for (int numComp = 0; numComp < numberComponent; numComp++) {
@@ -730,7 +1093,7 @@ int main() {
 					}
 				}
 			}
-		}
+		}*/
 
 #pragma omp parallel for
 		for (int i = 1; i < N_x + 1; i++) {
@@ -782,17 +1145,17 @@ int main() {
 
 		/* the law of conservation of mass */
 		Full_rho1 = 0.;
-		Full_rho2 = 0.;
-		Full_rho3 = 0.;
+		rho_mix_max = -1000;
+		rho_mix_min = 1000;
 		rho_min[0] = 1000.;
 		rho_max[0] = -1000.;
 		rho_min[1] = 1000.;
 		rho_max[1] = -1000.;
 		rho_min[2] = 1000.;
 		rho_max[2] = -1000.;
-		rho_mix_max = -1000;
-		rho_mix_min = 1000;
 
+		Full_rho2 = 0.;
+		Full_rho3 = 0.;
 #pragma omp parallel for
 		for (int i = 1; i < N_x + 1; i++) {
 			for (int j = 1; j < N_y + 1; j++) {
@@ -834,16 +1197,17 @@ int main() {
 		for (int i = 1; i < N_x + 1; i++) {
 			for (int j = 1; j < N_y + 1; j++) {
 				for (int l = 1; l < N_z + 1; l++) {
-					for (int numComp = 0; numComp < numberComponent; numComp++) {
-						ux[numComp][i][j][l] = f[numComp][1][i][j][l] * c[1][0] / rho[numComp][i][j][l];
-						uy[numComp][i][j][l] = f[numComp][1][i][j][l] * c[1][1] / rho[numComp][i][j][l];
-						uz[numComp][i][j][l] = f[numComp][1][i][j][l] * c[1][2] / rho[numComp][i][j][l];
-						for (int s = 2; s < 19; s++) {
-							ux[numComp][i][j][l] += f[numComp][s][i][j][l] * c[s][0] / rho[numComp][i][j][l];
-							uy[numComp][i][j][l] += f[numComp][s][i][j][l] * c[s][1] / rho[numComp][i][j][l];
-							uz[numComp][i][j][l] += f[numComp][s][i][j][l] * c[s][2] / rho[numComp][i][j][l];
+					if (mask[i][j][l] == 0) {
+						for (int numComp = 0; numComp < numberComponent; numComp++) {
+							ux[numComp][i][j][l] = f[numComp][1][i][j][l] * c[1][0] / rho[numComp][i][j][l];
+							uy[numComp][i][j][l] = f[numComp][1][i][j][l] * c[1][1] / rho[numComp][i][j][l];
+							uz[numComp][i][j][l] = f[numComp][1][i][j][l] * c[1][2] / rho[numComp][i][j][l];
+							for (int s = 2; s < 19; s++) {
+								ux[numComp][i][j][l] += f[numComp][s][i][j][l] * c[s][0] / rho[numComp][i][j][l];
+								uy[numComp][i][j][l] += f[numComp][s][i][j][l] * c[s][1] / rho[numComp][i][j][l];
+								uz[numComp][i][j][l] += f[numComp][s][i][j][l] * c[s][2] / rho[numComp][i][j][l];
+							}
 						}
-
 					}
 				}
 			}
@@ -855,6 +1219,7 @@ int main() {
 		for (int i = 1; i < N_x + 1; i++) {
 			for (int j = 1; j < N_y + 1; j++) {
 				for (int l = 1; l < N_z + 1; l++) {
+					//pressure[i][j][l] = PressurePengRobinson(rho[0][i][j][l], T, omega[0]);
 					pressure[i][j][l] = PressurePengRobinsonMultyComponent(rho[0][i][j][l], rho[1][i][j][l], rho[2][i][j][l]);
 				}
 			}
@@ -1010,7 +1375,7 @@ int main() {
 				for (int l = 1; l < N_z + 1; l++) {
 					for (int numComp = 0; numComp < numberComponent; numComp++) {
 						dux[numComp][i][j][l] = 0.;
-						duy[numComp][i][j][l] = 0.;
+						duy[numComp][i][j][l] = -g;
 						duz[numComp][i][j][l] = 0.;
 						if (mask[i][j][l] == 0.0) {
 							for (size_t s = 1; s < 19; s++) {
@@ -1059,7 +1424,6 @@ int main() {
 						ux_all[i][j][l] += rho[numComp][i][j][l] * ux[numComp][i][j][l] / Sum_rho[i][j][l];
 						uy_all[i][j][l] += rho[numComp][i][j][l] * uy[numComp][i][j][l] / Sum_rho[i][j][l];
 						uz_all[i][j][l] += rho[numComp][i][j][l] * uz[numComp][i][j][l] / Sum_rho[i][j][l];
-
 					}
 				}
 			}
@@ -1068,19 +1432,20 @@ int main() {
 		/* one iteration*/
 		vector<double> moment(19);
 #pragma omp parallel for
-
 		for (int i = 1; i < N_x + 1; i++) {
 			for (int j = 1; j < N_y + 1; j++) {
 				for (int l = 1; l < N_z + 1; l++) {
 					for (int numComp = 0; numComp < numberComponent; numComp++) {
 						for (int s = 0; s < kMax; s++) {
 							m[s] = 0;
-							for (int s1 = 0; s1 < kMax; s1++) {
-								m[s] += M[s][s1] * f[numComp][s1][i][j][l];
+							for (int s11 = 0; s11 < kMax; s11++) {
+								m[s] += M[s][s11] * f[numComp][s11][i][j][l];
 							}
 						}
+
+
 						m_eq[0] = rho[numComp][i][j][l];
-						m_eq[1] = -11 * rho[numComp][i][j][l] + 19 * rho[numComp][i][j][l] * squaring(ux_all[i][j][l], uy_all[i][j][l], uz_all[i][j][l]) * delta_t * delta_t / h / h;
+						m_eq[1] = -11. * rho[numComp][i][j][l] + 19. * rho[numComp][i][j][l] * squaring(ux_all[i][j][l], uy_all[i][j][l], uz_all[i][j][l]) * delta_t * delta_t / h / h;
 						m_eq[2] = w_e * rho[numComp][i][j][l] + w_ej * rho[numComp][i][j][l] * squaring(ux_all[i][j][l], uy_all[i][j][l], uz_all[i][j][l]) * delta_t * delta_t / h / h;
 						m_eq[3] = ux_all[i][j][l] * rho[numComp][i][j][l] * delta_t / h;
 						m_eq[4] = -2. / 3. * ux_all[i][j][l] * rho[numComp][i][j][l] * delta_t / h;
@@ -1088,27 +1453,29 @@ int main() {
 						m_eq[6] = -2. / 3. * uy_all[i][j][l] * rho[numComp][i][j][l] * delta_t / h;
 						m_eq[7] = uz_all[i][j][l] * rho[numComp][i][j][l] * delta_t / h;
 						m_eq[8] = -2. / 3. * uz_all[i][j][l] * rho[numComp][i][j][l] * delta_t / h;
-						m_eq[9] = 1 / rho[numComp][i][j][l] * (2 * m_eq[3] * m_eq[3] - (m_eq[5] * m_eq[5] + m_eq[7] * m_eq[7]));
+						m_eq[9] = 1. / rho[numComp][i][j][l] * (2 * m_eq[3] * m_eq[3] - (m_eq[5] * m_eq[5] + m_eq[7] * m_eq[7]));
 						m_eq[10] = w_xx * m_eq[9];
-						m_eq[11] = 1 / rho[numComp][i][j][l] * (m_eq[5] * m_eq[5] - m_eq[7] * m_eq[7]);
+						m_eq[11] = 1. / rho[numComp][i][j][l] * (m_eq[5] * m_eq[5] - m_eq[7] * m_eq[7]);
 						m_eq[12] = w_xx * m_eq[11];
-						m_eq[13] = 1 / rho[numComp][i][j][l] * m_eq[3] * m_eq[5];
-						m_eq[14] = 1 / rho[numComp][i][j][l] * m_eq[7] * m_eq[5];
-						m_eq[15] = 1 / rho[numComp][i][j][l] * m_eq[3] * m_eq[7];
+						m_eq[13] = 1. / rho[numComp][i][j][l] * m_eq[3] * m_eq[5];
+						m_eq[14] = 1. / rho[numComp][i][j][l] * m_eq[7] * m_eq[5];
+						m_eq[15] = 1. / rho[numComp][i][j][l] * m_eq[3] * m_eq[7];
 						m_eq[16] = 0;
 						m_eq[17] = 0;
 						m_eq[18] = 0;
 
 						for (int s = 0; s < kMax; s++) {
-							moment[s] = 0;
-							for (int s1 = 0; s1 < kMax; s1++) {
-								for (int s2 = 0; s2 < kMax; s2++) {
-									moment[s] += -Mi[s][s1] * s_ii[s2] * (m[s1] - m_eq[s1]) * Kroneker(s1, s2);
-								}
-							}
+							m[s] += s_ii[s] * (m_eq[s] - m[s]);
 						}
 						for (int s = 0; s < kMax; s++) {
-							f[numComp][s][i][j][l] = f[numComp][s][i][j][l] + moment[s] + F_e(c[s], ux[numComp][i][j][l] + dux[numComp][i][j][l] + g, uy[numComp][i][j][l] + duy[numComp][i][j][l],
+							f[numComp][s][i][j][l] = 0.;
+							for (int s11 = 0; s11 < kMax; s11++) {
+								f[numComp][s][i][j][l] += Mi[s][s11] * m[s11];
+							}
+						}
+
+						for (int s = 0; s < kMax; s++) {
+							f[numComp][s][i][j][l] += F_e(c[s], ux[numComp][i][j][l] + dux[numComp][i][j][l], uy[numComp][i][j][l] + duy[numComp][i][j][l],
 								uz[numComp][i][j][l] + duz[numComp][i][j][l], w[s], rho[numComp][i][j][l]) -
 								F_e(c[s], ux[numComp][i][j][l], uy[numComp][i][j][l], uz[numComp][i][j][l], w[s], rho[numComp][i][j][l]);
 						}
@@ -1130,14 +1497,6 @@ int main() {
 			cout << " rho1 min = " << rho_min[0] << " and rho1 max = " << rho_max[0] << endl;
 			cout << " rho2 min = " << rho_min[1] << " and rho2 max = " << rho_max[1] << endl;
 			cout << " rho3 min = " << rho_min[2] << " and rho3 max = " << rho_max[2] << endl;
-			//cout << (double)(1. - vol) << endl; // porosity
-			if (Full_rho1 < 20. * N_x * N_y * N_z) {
-				auto end = std::chrono::steady_clock::now();
-
-				auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
-				std::cout << "The time: " << elapsed_ms.count() << " ms\n";
-				//exit(1);
-			}
 		}
 
 	}
