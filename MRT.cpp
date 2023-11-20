@@ -11,23 +11,23 @@ using namespace std;
 const double R = 8.31446;
 double delta_t = 1e-9;
 double h = 1e-6;
-int N_x = 100;
-int N_y = 5;
+int N_x = 29;
+int N_y = 100;
 int N_z = 1;
-int FullTime = 10000;
-int RelaxTime = 1000000;
+int FullTime = 10000000;
+int RelaxTime = 10000000;
 double teta = 1. / 3. * h * h / delta_t / delta_t;
 double tau = 1.;
 double A = -0.58;
 double T = 350;
-double g = 0;
+double g = 0.89;
 double Full_rho1 = 0;
 double Full_rho2 = 0;
 double Full_rho3 = 0;
 vector<double> Full_velocity_x = { 0, 0, 0 };
 vector<double> Full_velocity_y = { 0, 0, 0 };
 vector<double> Full_velocity_z = { 0, 0, 0 };
-double coef = 0.97;
+double coef1 = 1.003, coef = 0.99;
 //vector<double> omega = { 0.01142, 0.2514, 0.0979 }; /* metan *//* pentan */
 //double wetWalls = 1;
 //double wetObst = 1.;
@@ -63,7 +63,7 @@ vector<double> rho_cr = { 162.66, 228., 233. };
 vector<double> s = { -0.154 , -0.06413, -0.082 };
 double a_0 = 0.4572793, b_0 = 0.07780669;
 vector<vector<double>> k = { {0, 0.01, 0.045}, { 0.01, 0, 0.005}, {0.045, 0.005, 0} };
-vector<double> gamma = { 0.28, 0.541, 1.8 };
+vector<double> gamma = { 0.28, 0.52, 0.8 };
 vector<double> rho_min = { 100, 100, 100 };
 vector<double> rho_max = { -100, -100, -100 };
 double rho_mix_max, rho_mix_min;
@@ -71,7 +71,7 @@ double percent1 = 0.8325;
 double percent2 = 0.1125;
 double rho_mix = 220;
 
-double s1 = 1.19,s3 = 1., s2 = 1.4, s10 = 1.4, s4 = 1.2, s16 = 1.98, s9 = 1., s13 = 1.; // s13 = 1 / tau, tau = 0.6
+double s1 = 1.19,s3 = 1. / tau, s2 = 1.4, s10 = 1.4, s4 = 1.2, s16 = 1.98, s9 = 1., s13 = 1./tau; // s13 = 1 / tau, tau = 0.6
 //double s1 = 1., s2 = 1., s10 = 1., s4 = 1., s16 = 1., s9 = 1., s13 = 1., s3 = 1.; // s13 = 1 / tau, tau = 0.6
 //double w_e = 3, w_ej = -11 / 2, w_xx = -0.5;
 double w_e = 3., w_ej = -11./2., w_xx = - 1./2.;
@@ -105,6 +105,17 @@ double Kroneker(int a, int b) {
 	return number;
 }
 
+double tau_visc(int numComp, double rho) {
+	double visc, ksi;
+	ksi = pow(Tcr[numComp], 1. / 6.) / pow(mu[numComp], 1. / 2.) / pow(p_cr[numComp] * 9.869e-6, 2. / 3.);
+	if (T / Tcr[numComp] < 1.5) {
+		visc = 34e-5 * pow(Tcr[numComp], 0.94) / ksi;
+	}
+	else {
+		visc = 17.78e-5 * (4.58 * Tcr[numComp] - 1.67);
+	}
+	return visc / rho / teta / teta / delta_t + 1. / 2.;
+}
 inline double scalar_product(vector<double> vec1, double vec2, double vec3, double vec4) {
 	return vec1[0] * vec2 + vec1[1] * vec3 + vec1[2] * vec4;
 }
@@ -154,6 +165,7 @@ double PressurePengRobinsonMultyComponent(double rho1, double rho2, double rho3)
 	return pressure;
 }
 
+
 /* initial velocity and change velocity*/
 vector<vector<vector<vector<double>>>> ux(numberComponent, vector<vector<vector<double>>>(N_x + 2, vector<vector<double>>(N_y + 2, vector<double>(N_z + 2))));
 vector<vector<vector<vector<double>>>> uy(numberComponent, vector<vector<vector<double>>>(N_x + 2, vector<vector<double>>(N_y + 2, vector<double>(N_z + 2))));
@@ -164,8 +176,8 @@ vector<vector<vector<vector<double>>>> duz(numberComponent, vector<vector<vector
 vector<vector<vector<double>>> ux_all(N_x + 2, vector<vector<double>>(N_y + 2, vector<double>(N_z + 2)));
 vector<vector<vector<double>>> uy_all(N_x + 2, vector<vector<double>>(N_y + 2, vector<double>(N_z + 2)));
 vector<vector<vector<double>>> uz_all(N_x + 2, vector<vector<double>>(N_y + 2, vector<double>(N_z + 2)));
-vector<double> m(kMax);
-vector<double> m_eq(kMax);
+//vector<double> m(kMax);
+//vector<double> m_eq(kMax);
 
 
 /* initial density, mask and "effective" density*/
@@ -178,48 +190,6 @@ vector<vector<vector<double>>> pressure(N_x + 2, vector<vector<double>>(N_y + 2,
 vector<vector<vector<double>>> gamma_rho(N_x + 2, vector<vector<double>>(N_y + 2, vector<double>(N_z + 2)));
 vector<vector<vector<double>>> Sum_rho(N_x + 2, vector<vector<double>>(N_y + 2, vector<double>(N_z + 2)));
 
-/*const double M[kMax][kMax] = {
-   {  1.0,   1.0,   1.0,   1.0,   1.0,   1.0,   1.0,  1.0,  1.0, 1.0, 1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0}, // rho
-   {-30.0, -11.0, -11.0, -11.0, -11.0, -11.0, -11.0,  8.0,  8.0, 8.0, 8.0,  8.0,  8.0,  8.0,  8.0,  8.0,  8.0,  8.0,  8.0}, // e
-   { 12.0,  -4.0,  -4.0,  -4.0,  -4.0,  -4.0,  -4.0,  1.0,  1.0, 1.0, 1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0}, // eps
-   {  0.0,   1.0,  -1.0,   0.0,   0.0,   0.0,   0.0,  1.0, -1.0, 1.0, -1.0,  1.0, -1.0,  1.0, -1.0,  0.0,  0.0,  0.0,  0.0}, // jx
-   {  0.0,  -4.0,   4.0,   0.0,   0.0,   0.0,   0.0,  1.0, -1.0, 1.0, -1.0,  1.0, -1.0,  1.0, -1.0,  0.0,  0.0,  0.0,  0.0}, // qx
-   {  0.0,   0.0,   0.0,   1.0,  -1.0,   0.0,   0.0,  1.0,  1.0, -1.0, -1.0,  0.0,  0.0,  0.0,  0.0,  1.0, -1.0,  1.0, -1.0}, // jy
-   {  0.0,   0.0,   0.0,  -4.0,   4.0,   0.0,   0.0,  1.0,  1.0, -1.0, -1.0,  0.0,  0.0,  0.0,  0.0,  1.0, -1.0,  1.0, -1.0}, // qy
-   {  0.0,   0.0,   0.0,   0.0,   0.0,   1.0,  -1.0,  0.0,  0.0, 0.0, 0.0,  1.0,  1.0, -1.0, -1.0,  1.0,  1.0, -1.0, -1.0}, // jz
-   {  0.0,   0.0,   0.0,   0.0,   0.0,  -4.0,   4.0,  0.0,  0.0, 0.0, 0.0,  1.0,  1.0, -1.0, -1.0,  1.0,  1.0, -1.0, -1.0}, // qz
-   {  0.0,   2.0,   2.0,  -1.0,  -1.0,  -1.0,  -1.0,  1.0,  1.0, 1.0, 1.0,  1.0,  1.0,  1.0,  1.0, -2.0, -2.0, -2.0, -2.0}, // pxx
-   {  0.0,  -4.0,  -4.0,   2.0,   2.0,   2.0,   2.0,  1.0,  1.0, 1.0, 1.0,  1.0,  1.0,  1.0,  1.0, -2.0, -2.0, -2.0, -2.0}, // pi_xx
-   {  0.0,   0.0,   0.0,   1.0,   1.0,  -1.0,  -1.0,  1.0,  1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0,  0.0,  0.0,  0.0,  0.0}, // p_ww
-   {  0.0,   0.0,   0.0,  -2.0,  -2.0,   2.0,   2.0,  1.0,  1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0,  0.0,  0.0,  0.0,  0.0}, // pi_ww
-   {  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,  1.0, -1.0, -1.0, 1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0}, // p_xy
-   {  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,  0.0,  0.0, 0.0, 0.0,  0.0,  0.0,  0.0,  0.0,  1.0, -1.0, -1.0,  1.0}, // p_yz
-   {  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,  0.0,  0.0, 0.0, 0.0,  1.0, -1.0, -1.0,  1.0,  0.0,  0.0,  0.0,  0.0}, // p_xz
-   {  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,  1.0, -1.0, 1.0, -1.0, -1.0,  1.0, -1.0,  1.0,  0.0,  0.0,  0.0,  0.0}, // mx
-   {  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0, -1.0, -1.0, 1.0, 1.0,  0.0,  0.0,  0.0,  0.0,  1.0, -1.0,  1.0, -1.0}, // my
-   {  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,  0.0,  0.0, 0.0, 0.0,  1.0,  1.0, -1.0, -1.0, -1.0, -1.0,  1.0,  1.0}, // mz
-};
-
-const double Mi[kMax][kMax] = {
-   {1.0 / 19.0,  -5.0 / 399.0,   1.0 / 21.0,   0.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0,  0.0, 0.0, 0.0,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-   {1.0 / 19.0, -11.0 / 2394.0, -1.0 / 63.0,   1.0 / 10.0, -1.0 / 10.0, 0.0, 0.0,  0.0, 0.0, 1.0 / 18.0, -1.0 / 18.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0, 0.0},
-   {1.0 / 19.0, -11.0 / 2394.0, -1.0 / 63.0,  -1.0 / 10.0,  1.0 / 10.0, 0.0, 0.0, 0.0, 0.0, 1.0 / 18.0, -1.0 / 18.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0, 0.0},
-   {1.0 / 19.0, -11.0 / 2394.0, -1.0 / 63.0,   0.0, 0.0, 1.0 / 10.0, -1.0 / 10.0,  0.0, 0.0, -1.0 / 36.0,  1.0 / 36.0, 1.0 / 12.0, -1.0 / 12.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0},
-   {1.0 / 19.0, -11.0 / 2394.0, -1.0 / 63.0,   0.0, 0.0, -1.0 / 10.0, 1.0 / 10.0, 0.0, 0.0, -1.0 / 36.0,  1.0 / 36.0, 1.0 / 12.0, -1.0 / 12.0, 0.0, 0.0, 0.0,  0.0,  0.0, 0.0},
-   {1.0 / 19.0, -11.0 / 2394.0, -1.0 / 63.0,   0.0, 0.0, 0.0, 0.0,  1.0 / 10.0, -1.0 / 10.0, -1.0 / 36.0,  1.0 / 36.0, -1.0 / 12.0, 1.0 / 12.0, 0.0,  0.0, 0.0,  0.0, 0.0, 0.0},
-   {1.0 / 19.0, -11.0 / 2394.0, -1.0 / 63.0,   0.0, 0.0, 0.0, 0.0, -1.0 / 10.0,  1.0 / 10.0, -1.0 / 36.0,  1.0 / 36.0, -1.0 / 12.0, 1.0 / 12.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0},
-   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0,  1.0 / 10.0,  1.0 / 40.0, 1.0 / 10.0, 1.0 / 40.0,  0.0, 0.0,  1.0 / 36.0,  1.0 / 72.0, 1.0 / 12.0,  1.0 / 24.0, 1.0 / 4.0, 0.0,  0.0, 1.0 / 8.0, -1.0 / 8.0, 0.0},
-   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0, -1.0 / 10.0, -1.0 / 40.0, 1.0 / 10.0, 1.0 / 40.0,  0.0, 0.0,  1.0 / 36.0,  1.0 / 72.0, 1.0 / 12.0,  1.0 / 24.0, -1.0 / 4.0, 0.0,  0.0, -1.0 / 8.0, -1.0 / 8.0, 0.0},
-   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0,  1.0 / 10.0,  1.0 / 40.0, -1.0 / 10.0, -1.0 / 40.0,  0.0, 0.0,  1.0 / 36.0,  1.0 / 72.0, 1.0 / 12.0,  1.0 / 24.0, -1.0 / 4.0, 0.0,  0.0, 1.0 / 8.0, 1.0 / 8.0, 0.0},
-   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0, -1.0 / 10.0, -1.0 / 40.0, -1.0 / 10.0, -1.0 / 40.0,  0.0, 0.0,  1.0 / 36.0,  1.0 / 72.0, 1.0 / 12.0,  1.0 / 24.0, 1.0 / 4.0, 0.0,  0.0,-1.0 / 8.0, 1.0 / 8.0, 0.0},
-   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0,  1.0 / 10.0,  1.0 / 40.0,  0.0, 0.0,  1.0 / 10.0,  1.0 / 40.0,  1.0 / 36.0,  1.0 / 72.0, -1.0 / 12.0, -1.0 / 24.0, 0.0, 0.0,  1.0 / 4.0, -1.0 / 8.0, 0.0, 1.0 / 8.0},
-   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0, -1.0 / 10.0, -1.0 / 40.0,  0.0, 0.0,  1.0 / 10.0,  1.0 / 40.0,  1.0 / 36.0,  1.0 / 72.0, -1.0 / 12.0, -1.0 / 24.0, 0.0, 0.0, -1.0 / 4.0,  1.0 / 8.0, 0.0, 1.0 / 8.0},
-   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0,  1.0 / 10.0,  1.0 / 40.0,  0.0, 0.0, -1.0 / 10.0, -1.0 / 40.0,  1.0 / 36.0,  1.0 / 72.0, -1.0 / 12.0, -1.0 / 24.0, 0.0, 0.0, -1.0 / 4.0, -1.0 / 8.0, 0.0, -1.0 / 8.0},
-   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0, -1.0 / 10.0, -1.0 / 40.0,  0.0, 0.0, -1.0 / 10.0, -1.0 / 40.0,  1.0 / 36.0,  1.0 / 72.0, -1.0 / 12.0, -1.0 / 24.0, 0.0, 0.0,  1.0 / 4.0,  1.0 / 8.0, 0.0, -1.0 / 8.0},
-   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0,  0.0, 0.0, 1.0 / 10.0, 1.0 / 40.0,  1.0 / 10.0,  1.0 / 40.0, -1.0 / 18.0, -1.0 / 36.0, 0.0, 0.0, 0.0,  1.0 / 4.0, 0.0,  0.0, 1.0 / 8.0, -1.0 / 8.0},
-   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0,  0.0, 0.0, -1.0 / 10.0, -1.0 / 40.0,  1.0 / 10.0,  1.0 / 40.0, -1.0 / 18.0, -1.0 / 36.0, 0.0, 0.0, 0.0, -1.0 / 4.0, 0.0,  0.0, -1.0 / 8.0, -1.0 / 8.0},
-   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0,  0.0, 0.0, 1.0 / 10.0, 1.0 / 40.0, -1.0 / 10.0, -1.0 / 40.0, -1.0 / 18.0, -1.0 / 36.0, 0.0, 0.0, 0.0, -1.0 / 4.0, 0.0,  0.0, 1.0 / 8.0, 1.0 / 8.0},
-   {1.0 / 19.0,   4.0 / 1197.0,  1.0 / 252.0,  0.0, 0.0, -1.0 / 10.0, -1.0 / 40.0, -1.0 / 10.0, -1.0 / 40.0, -1.0 / 18.0, -1.0 / 36.0, 0.0, 0.0,0.0,  1.0 / 4.0, 0.0,  0.0, -1.0 / 8.0, 1.0 / 8.0}};*/
 
 void SaveVTKFile(int tStep)
 {
@@ -258,10 +228,18 @@ void SaveVTKFile(int tStep)
 	vtk_file << endl;
 
 	vtk_file << "VECTORS uflow1 double\n";
-	for (int l = 1; l < N_z + 1; l++)
-		for (int j = 1; j < N_y + 1; j++)
-			for (int i = 1; i < N_x + 1; i++)
-				vtk_file << ux[0][i][j][l] + g / 2 << " " << uy[0][i][j][l] << " " << uz[0][i][j][l] << " ";
+	for (int l = 1; l < N_z + 1; l++) {
+		for (int j = 1; j < N_y + 1; j++) {
+			for (int i = 1; i < N_x + 1; i++) {
+				if (mask[i][j][l] == 0) {
+					vtk_file << ux[0][i][j][l] << " " << uy[0][i][j][l] << " " << uz[0][i][j][l] << " ";
+				}
+				else {
+					vtk_file << 0 << " " << 0 << " " << 0 << " ";
+				}
+			}
+		}
+	}
 	vtk_file << endl;
 
 	vtk_file << "SCALARS rho2 double 1\n";
@@ -283,24 +261,50 @@ void SaveVTKFile(int tStep)
 
 	vtk_file << "SCALARS rho_sum double 1\n";
 	vtk_file << "LOOKUP_TABLE default\n";
-	for (int l = 1; l < N_z + 1; l++)
-		for (int j = 1; j < N_y + 1; j++)
-			for (int i = 1; i < N_x + 1; i++)
-				vtk_file << rho[1][i][j][l] + rho[0][i][j][l] + rho[2][i][j][l] << " ";
+	for (int l = 1; l < N_z + 1; l++) {
+		for (int j = 1; j < N_y + 1; j++) {
+			for (int i = 1; i < N_x + 1; i++) {
+				//if (mask[i][j][l] == 0) {
+					vtk_file << rho[1][i][j][l] + rho[0][i][j][l] + rho[2][i][j][l] << " ";
+				//}
+				//else {
+					//vtk_file << 0 << " ";
+				//}
+			}
+		}
+	}
 	vtk_file << endl;
+				
+
 
 	vtk_file << "VECTORS uflow2 double\n";
-	for (int l = 1; l < N_z + 1; l++)
-		for (int j = 1; j < N_y + 1; j++)
-			for (int i = 1; i < N_x + 1; i++)
-				vtk_file << ux[1][i][j][l] + g / 2 << " " << uy[1][i][j][l] << " " << uz[1][i][j][l] << " ";
+	for (int l = 1; l < N_z + 1; l++) {
+		for (int j = 1; j < N_y + 1; j++) {
+			for (int i = 1; i < N_x + 1; i++) {
+				if (mask[i][j][l] == 0) {
+					vtk_file << ux[1][i][j][l] << " " << uy[1][i][j][l] << " " << uz[1][i][j][l] << " ";
+				}
+				else {
+					vtk_file << 0 << " " << 0 << " " << 0 << " ";
+				}
+			}
+		}
+	}
 	vtk_file << endl;
 	
 	vtk_file << "VECTORS uflow3 double\n";
-	for (int l = 1; l < N_z + 1; l++)
-		for (int j = 1; j < N_y + 1; j++)
-			for (int i = 1; i < N_x + 1; i++)
-				vtk_file << ux[2][i][j][l] + g / 2 << " " << uy[2][i][j][l] << " " << uz[2][i][j][l] << " ";
+	for (int l = 1; l < N_z + 1; l++) {
+		for (int j = 1; j < N_y + 1; j++) {
+			for (int i = 1; i < N_x + 1; i++) {
+				if (mask[i][j][l] == 0) {
+					vtk_file << ux[2][i][j][l]  << " " << uy[2][i][j][l] << " " << uz[2][i][j][l] << " ";
+				}
+				else {
+					vtk_file << 0 << " " << 0 << " " << 0 << " ";
+				}
+			}
+		}
+	}
 	vtk_file << endl;
 	
 	vtk_file << "SCALARS mask double 1\n";
@@ -371,15 +375,15 @@ int main() {
 		for (int i = 1; i < N_x + 1; i++) {
 			for (int l = 1; l < N_z + 1; l++) {
 				if (mask[i][j][l] == 0) {
-					rho[0][i][j][l] = 136;
-					rho[1][i][j][l] = 79;
-					rho[2][i][j][l] = 96;
+					rho[0][i][j][l] = 120;
+					rho[1][i][j][l] = 70;
+					rho[2][i][j][l] = 84;
 				}
 			}
 		}
 	}
 
-	/*for (int j = 1; j < N_y + 1; j++) {
+	for (int j = 1; j < N_y + 1; j++) {
 		for (int l = 1; l < N_z + 1; l++) {
 			rho[0][0][j][l] = 141;
 			rho[1][0][j][l] = 84;
@@ -388,7 +392,7 @@ int main() {
 			rho[1][N_x + 1][j][l] = 59;
 			rho[2][N_x + 1][j][l] = 76;
 		}
-	}*/
+	}
 	/*vector<double> temp(3, 0.0);
 	temp = mixture(percent1, percent2);
 	cout << temp[0] << endl;
@@ -423,14 +427,10 @@ int main() {
 			for (int l = 1; l < N_z + 1; l++) {
 				Full_rho1 += rho[0][i][j][l];
 				ux[0][i][j][l] = uy[0][i][j][l] = uz[0][i][j][l] = dux[0][i][j][l] = duy[0][i][j][l] = duz[0][i][j][l] = 0.0;
-				
 				Full_rho2 += rho[1][i][j][l];
 				ux[1][i][j][l] = uy[1][i][j][l] = uz[1][i][j][l] = dux[1][i][j][l] = duy[1][i][j][l] = duz[1][i][j][l] = 0.0;
-			Full_rho3 += rho[2][i][j][l];
+			    Full_rho3 += rho[2][i][j][l];
 				ux[2][i][j][l] = uy[2][i][j][l] = uz[2][i][j][l] = dux[2][i][j][l] = duy[2][i][j][l] = duz[2][i][j][l] = 0.0;
-				ux[2][i][j][l] = 0.1;
-				uy[2][i][j][l] = 0.5;
-				uz[2][i][j][l] = 0.2;
 			}
 		}
 	}
@@ -451,54 +451,40 @@ int main() {
 		}
 	}
 
-	/*for (int j = 1; j < N_y + 1; j++) {
-		for (int i = 1; i < N_x + 1; i++) {
-			for (int l = 1; l < N_z + 1; l++) {
-
-
-				if (sqrt((i - 17) * (i - 17) + (j - 2) * (j - 2) + (l ) * (l )) <= 2)
-				{
-					mask[i][j][l] = 1.;
-					volumeObs += 1;
-				}
-
-				if (sqrt((i - 9) * (i - 9) + (j - 3) * (j - 3) + (l-4) * (l-4)) <= 2)
-				{
-					mask[i][j][l] = 1.;
-					volumeObs += 1;
-				}
-				if (sqrt((i - 10) * (i - 10) + (j ) * (j) + (l) * (l)) <= 1)
-				{
-					mask[i][j][l] = 1.;
-					volumeObs += 1;
-				}
-
-				if (sqrt((i - 10) * (i - 10) + (j - 2) * (j - 2) + (l - 3) * (l- 3)) <= 2)
-				{
-					mask[i][j][l] = 1.;
-					volumeObs += 1;
-				}
-
-				if (sqrt((i - 15) * (i - 15) + (j - 4) * (j - 4) + (l-5) * (l-5)) <= 2)
-				{
-					mask[i][j][l] = 1.;
-					volumeObs += 1;
-				}
-
-				if (sqrt((i - 22) * (i - 22) + (j - 3) * (j - 3) + (l - 3) * (l - 3)) <= 2)
-				{
-					mask[i][j][l] = 1.;
-					volumeObs += 1;
-				}
-
-				if (sqrt((i - 15) * (i - 15) + (j - 3) * (j - 3) + (l - 1) * (l - 1)) <= 2)
-				{
-					mask[i][j][l] = 1.;
-					volumeObs += 1;
-				}
-			}
+	for (int i = 0; i < 5; i++)
+	{
+		for (int j = 0; j < 95; j++) 
+		{
+			mask[i][j][1] = 1.;
 		}
-	}*/
+	}for (int i = 25; i < 31; i++)
+	{
+		for (int j = 0; j < 95; j++) 
+		{
+			mask[i][j][1] = 1.;
+		}
+	}for (int i = 10; i < 20; i++)
+	{
+		for (int j = 60; j < 101; j++) 
+		{
+			mask[i][j][1] = 1.;
+		}
+	}for (int i = 5; i < 13; i++)
+	{
+		for (int j = 0; j < 55; j++) 
+		{
+			mask[i][j][1] = 1.;
+		}
+	}for (int i = 18; i < 25; i++)
+	{
+		for (int j = 0; j < 55; j++) 
+		{
+			mask[i][j][1] = 1.;
+		}
+	}
+
+
+	
 	double vol = (double)volumeObs / N_x / N_y / N_z;
 	cout << (double)(1. - vol) << endl; // porosity
 	/* vector of possible velocities*/
@@ -643,13 +629,13 @@ int main() {
 
 				for (size_t l = 1; l < N_z + 1; l++) {
 					for (size_t j = 1; j < N_y + 1; j++) {
-						buf[numComp][1][0][j][l] = buf[numComp][2][1][j][l];
+						buf[numComp][1][0][j][l] = coef1 * buf[numComp][2][1][j][l];
 						buf[numComp][2][N_x + 1][j][l] = coef *buf[numComp][1][N_x][j][l];
 					};
 				};
 				for (size_t j = 1; j < N_y + 1; j++) {
 					for (size_t l = 1; l < N_z + 1; l++) {
-						buf[numComp][7][0][j][l] = buf[numComp][10][1][j + 1][l];
+						buf[numComp][7][0][j][l] = coef1 * buf[numComp][10][1][j + 1][l];
 					}
 				}
 				for (size_t j = 1; j < N_y + 1; j++) {
@@ -664,13 +650,13 @@ int main() {
 				}
 				for (size_t j = 1; j < N_y + 1; j++) {
 					for (size_t l = 0; l < N_z + 1; l++) {
-						buf[numComp][9][0][j][l] = buf[numComp][8][1][j - 1][l];
+						buf[numComp][9][0][j][l] = coef1 * buf[numComp][8][1][j - 1][l];
 					}
 				}
 
 				for (size_t l = 1; l < N_z + 1; l++) {
 					for (size_t j = 0; j < N_y + 1; j++) {
-						buf[numComp][11][0][j][l] = buf[numComp][14][1][j][l + 1];
+						buf[numComp][11][0][j][l] = coef1 * buf[numComp][14][1][j][l + 1];
 					}
 				}
 
@@ -688,28 +674,27 @@ int main() {
 
 				for (size_t l = 1; l < N_z + 1; l++) {
 					for (size_t j = 0; j < N_y + 1; j++) {
-						buf[numComp][13][0][j][l] = buf[numComp][12][1][j][l - 1];
+						buf[numComp][13][0][j][l] = coef1 * buf[numComp][12][1][j][l - 1];
 					}
 				}
 
 
 			}
 			else {
-				g = 0;
+				g = 0.89;
 				buf[numComp][1][0] = buf[numComp][1][1];
 				buf[numComp][2][N_x + 1] = buf[numComp][2][N_x];
 				buf[numComp][7][0] = buf[numComp][7][1];
 				buf[numComp][8][N_x + 1] = buf[numComp][8][N_x];
-				buf[numComp][9][N_x + 1] = buf[numComp][9][N_x];
-				buf[numComp][10][0] = buf[numComp][10][1];
+				buf[numComp][10][N_x + 1] = buf[numComp][10][N_x];
+				buf[numComp][9][0] = buf[numComp][9][1];
 				buf[numComp][11][0] = buf[numComp][11][1];
 				buf[numComp][12][N_x + 1] = buf[numComp][12][N_x];
-				buf[numComp][13][N_x + 1] = buf[numComp][13][N_x];
-				buf[numComp][14][0] = buf[numComp][14][1];
+				buf[numComp][14][N_x + 1] = buf[numComp][14][N_x];
+				buf[numComp][13][0] = buf[numComp][13][1];
 			}
 
 			/* movement with walls*/
-
 			for (int i = 1; i < N_x + 1; i++) {
 				for (int l = 1; l < N_z + 1; l++) {
 					buf[numComp][3][i][0][l] = buf[numComp][4][i][1][l];
@@ -775,7 +760,73 @@ int main() {
 					buf[numComp][17][i][0][l] = buf[numComp][16][i][1][l - 1];
 				}
 			}
+			/*for (int i = 1; i < N_x + 1; i++) {
+				for (int l = 1; l < N_z + 1; l++) {
+					buf[numComp][3][i][0][l] = buf[numComp][4][i][1][l];
+					buf[numComp][4][i][N_y + 1][l] = buf[numComp][3][i][N_y][l];
+				}
+			}
+
+			for (int i = 1; i < N_x + 1; i++) {
+				for (int j = 1; j < N_y + 1; j++) {
+					buf[numComp][5][i][j][0] = buf[numComp][5][i][j][N_z];
+					buf[numComp][6][i][j][N_z + 1] = buf[numComp][6][i][j][1];
+				}
+			}
+
+			for (int i = 0; i < N_x + 1; i++) {
+				for (int l = 1; l < N_z + 1; l++) {
+					buf[numComp][7][i][0][l] = buf[numComp][10][i + 1][1][l];
+					buf[numComp][9][i][N_y + 1][l] = buf[numComp][8][i + 1][N_y][l];
+				}
+			}
+			for (int i = 1; i < N_x + 2; i++) {
+				for (int l = 1; l < N_z + 1; l++) {
+					buf[numComp][10][i][N_y + 1][l] = buf[numComp][7][i - 1][N_y][l];
+					buf[numComp][8][i][0][l] = buf[numComp][9][i - 1][1][l];
+				}
+			}
+
+			for (int i = 0; i < N_x + 1; i++) {
+				for (int j = 1; j < N_y + 1; j++) {
+					buf[numComp][11][i][j][0] = buf[numComp][11][i][j][N_z];
+					buf[numComp][13][i][j][N_z + 1] = buf[numComp][13][i][j][1];
+				}
+			}
+			for (int i = 1; i < N_x + 2; i++) {
+				for (int j = 1; j < N_y + 1; j++) {
+					buf[numComp][14][i][j][N_z + 1] = buf[numComp][14][i][j][1];
+					buf[numComp][12][i][j][0] = buf[numComp][12][i][j][N_z];
+				}
+			}
+
+			for (int i = 1; i < N_x + 1; i++) {
+				for (int j = 0; j < N_y + 1; j++) {
+					buf[numComp][15][i][j][0] = buf[numComp][15][i][j][N_z];
+					buf[numComp][17][i][j][N_z + 1] = buf[numComp][17][i][j][1];
+				}
+			}
+			for (int i = 1; i < N_x + 1; i++) {
+				for (int j = 1; j < N_y + 2; j++) {
+					buf[numComp][18][i][j][N_z + 1] = buf[numComp][18][i][j][1];
+					buf[numComp][16][i][j][0] = buf[numComp][16][i][j][N_z];
+				}
+			}
+
+			for (int i = 1; i < N_x + 1; i++) {
+				for (int l = 0; l < N_z + 1; l++) {
+					buf[numComp][15][i][0][l] = buf[numComp][18][i][1][l + 1];
+					buf[numComp][16][i][N_y + 1][l] = buf[numComp][17][i][N_y][l + 1];
+				}
+			}
+			for (int i = 0; i < N_x + 1; i++) {
+				for (int l = 1; l < N_z + 2; l++) {
+					buf[numComp][18][i][N_y + 1][l] = buf[numComp][15][i][N_y][l - 1];
+					buf[numComp][17][i][0][l] = buf[numComp][16][i][1][l - 1];
+				}
+			}*/
 		}
+
 
 /*		for (int numComp = 0; numComp < numberComponent; numComp++) {
 
@@ -964,12 +1015,13 @@ int main() {
 		for (int i = 1; i < N_x + 1; i++) {
 			for (int j = 1; j < N_y + 1; j++) {
 				for (int l = 1; l < N_z + 1; l++) {
-					for (int numComp = 0; numComp < numberComponent; numComp++) {
-						rho[numComp][i][j][l] = f[numComp][0][i][j][l];
-						for (int s = 1; s < 19; s++) {
-							rho[numComp][i][j][l] += f[numComp][s][i][j][l];
+					if (mask[i][j][l] == 0) {
+						for (int numComp = 0; numComp < numberComponent; numComp++) {
+							rho[numComp][i][j][l] = f[numComp][0][i][j][l];
+							for (int s = 1; s < 19; s++) {
+								rho[numComp][i][j][l] += f[numComp][s][i][j][l];
+							}
 						}
-						
 					}
 				}
 			}
@@ -988,7 +1040,7 @@ int main() {
 		
 		Full_rho2 = 0.;
 		Full_rho3 = 0.;
-#pragma omp parallel for
+#pragma omp parallel for 
 		for (int i = 1; i < N_x + 1; i++) {
 			for (int j = 1; j < N_y + 1; j++) {
 				for (int l = 1; l < N_z + 1; l++) {
@@ -1006,11 +1058,13 @@ int main() {
 				}
 			}
 		}
+		double sum_all = 0;
 #pragma omp parallel for
 		for (int i = 1; i < N_x + 1; i++) {
 			for (int j = 1; j < N_y + 1; j++) {
 				for (int l = 1; l < N_z + 1; l++) {
 					if (mask[i][j][l] == 0) {
+						sum_all += Sum_rho[i][j][l];
 						if (rho_min[0] > rho[0][i][j][l]) rho_min[0] = rho[0][i][j][l];
 						if (rho_max[0] < rho[0][i][j][l]) rho_max[0] = rho[0][i][j][l];
 						if (rho_min[1] > rho[1][i][j][l]) rho_min[1] = rho[1][i][j][l];
@@ -1029,16 +1083,17 @@ int main() {
 		for (int i = 1; i < N_x + 1; i++) {
 			for (int j = 1; j < N_y + 1; j++) {
 				for (int l = 1; l < N_z + 1; l++) {
-					for (int numComp = 0; numComp < numberComponent; numComp++) {
-						ux[numComp][i][j][l] = f[numComp][1][i][j][l] * c[1][0] / rho[numComp][i][j][l];
-						uy[numComp][i][j][l] = f[numComp][1][i][j][l] * c[1][1] / rho[numComp][i][j][l];
-						uz[numComp][i][j][l] = f[numComp][1][i][j][l] * c[1][2] / rho[numComp][i][j][l];
-						for (int s = 2; s < 19; s++) {
-							ux[numComp][i][j][l] += f[numComp][s][i][j][l] * c[s][0] / rho[numComp][i][j][l];
-							uy[numComp][i][j][l] += f[numComp][s][i][j][l] * c[s][1] / rho[numComp][i][j][l];
-							uz[numComp][i][j][l] += f[numComp][s][i][j][l] * c[s][2] / rho[numComp][i][j][l];
+					if (mask[i][j][l] == 0) {
+						for (int numComp = 0; numComp < numberComponent; numComp++) {
+							ux[numComp][i][j][l] = f[numComp][1][i][j][l] * c[1][0] / rho[numComp][i][j][l];
+							uy[numComp][i][j][l] = f[numComp][1][i][j][l] * c[1][1] / rho[numComp][i][j][l];
+							uz[numComp][i][j][l] = f[numComp][1][i][j][l] * c[1][2] / rho[numComp][i][j][l];
+							for (int s = 2; s < 19; s++) {
+								ux[numComp][i][j][l] += f[numComp][s][i][j][l] * c[s][0] / rho[numComp][i][j][l];
+								uy[numComp][i][j][l] += f[numComp][s][i][j][l] * c[s][1] / rho[numComp][i][j][l];
+								uz[numComp][i][j][l] += f[numComp][s][i][j][l] * c[s][2] / rho[numComp][i][j][l];
+							}
 						}
-						
 					}
 				}
 			}
@@ -1206,7 +1261,7 @@ int main() {
 				for (int l = 1; l < N_z + 1; l++) {
 					for (int numComp = 0; numComp < numberComponent; numComp++) {
 						dux[numComp][i][j][l] = 0.;
-						duy[numComp][i][j][l] = 0.;
+						duy[numComp][i][j][l] = - g;
 						duz[numComp][i][j][l] = 0.;
 						if (mask[i][j][l] == 0.0) {
 							for (size_t s = 1; s < 19; s++) {
@@ -1261,11 +1316,12 @@ int main() {
 		}
 		
 		/* one iteration*/
-		vector<double> moment(19);
+
 #pragma omp parallel for
 		for (int i = 1; i < N_x + 1; i++) {
 			for (int j = 1; j < N_y + 1; j++) {
 				for (int l = 1; l < N_z + 1; l++) {
+					vector<double> moment(19), m(19), m_eq(19);
 					for (int numComp = 0; numComp < numberComponent; numComp++) {
 						for (int s = 0; s < kMax; s++) {
 							m[s] = 0;
@@ -1306,7 +1362,7 @@ int main() {
 						}
 
 						for (int s = 0; s < kMax; s++) {
-							f[numComp][s][i][j][l] += F_e(c[s], ux[numComp][i][j][l] + dux[numComp][i][j][l] + g, uy[numComp][i][j][l] + duy[numComp][i][j][l],
+							f[numComp][s][i][j][l] += F_e(c[s], ux[numComp][i][j][l] + dux[numComp][i][j][l], uy[numComp][i][j][l] + duy[numComp][i][j][l],
 								uz[numComp][i][j][l] + duz[numComp][i][j][l], w[s], rho[numComp][i][j][l]) -
 								F_e(c[s], ux[numComp][i][j][l], uy[numComp][i][j][l], uz[numComp][i][j][l], w[s], rho[numComp][i][j][l]);
 						}
@@ -1331,7 +1387,7 @@ int main() {
 //			};
 //		};
 
-		if (t % 100 == 0)
+		if (t % 1000 == 0)
 		{
 			SaveVTKFile(t);
 			cout << "Summa mass 1 = " << Full_rho1 << endl;
@@ -1344,14 +1400,7 @@ int main() {
 			cout << " rho1 min = " << rho_min[0] << " and rho1 max = " << rho_max[0] << endl;
 			cout << " rho2 min = " << rho_min[1] << " and rho2 max = " << rho_max[1] << endl;
 			cout << " rho3 min = " << rho_min[2] << " and rho3 max = " << rho_max[2] << endl;
-			cout << (double)(1. - vol) << endl; // porosity
-			if (Full_rho1 < 20. * N_x * N_y * N_z) {
-				auto end = std::chrono::steady_clock::now();
-
-				auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
-				std::cout << "The time: " << elapsed_ms.count() << " ms\n";
-				//exit(1);
-			}
+			std::cout << "Sum all = " << sum_all << endl;
 		}
 
 	}
